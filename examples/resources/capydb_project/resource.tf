@@ -1,14 +1,14 @@
-# Minimal: CapyDB picks the cluster, environment defaults server-side.
+# Minimal: CapyDB picks the region, environment defaults server-side.
 resource "capydb_project" "app" {
   name = "my-app"
 }
 
-# Pin the cluster and mark the project as non-production.
-data "capydb_clusters" "available" {}
+# Pin the region and mark the project as non-production.
+data "capydb_regions" "available" {}
 
 resource "capydb_project" "staging" {
   name        = "my-app-staging"
-  cluster_id  = data.capydb_clusters.available.clusters[0].id
+  region      = data.capydb_regions.available.regions[0].slug
   environment = "nonproduction"
 
   timeouts = {

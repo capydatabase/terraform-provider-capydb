@@ -178,7 +178,7 @@ func TestProjectResourceCRUD(t *testing.T) {
 	mock.mu.Lock()
 	provisionPolls := 0
 	for jobID, jobType := range mock.jobStates {
-		if jobType == "project.provision" {
+		if jobType == "instance.create" {
 			provisionPolls += mock.jobPolls[jobID]
 		}
 	}
@@ -412,7 +412,7 @@ func TestWebhookEndpointResourceCRUD(t *testing.T) {
 	// the framework's default machinery would during planning.
 	planRaw := objectValue(t, schemaType, map[string]tftypes.Value{
 		"url":            str("https://hooks.example.com/capydb"),
-		"event_types":    strList("project.provisioned", "backup.completed"),
+		"event_types":    strList("instance.createed", "backup.completed"),
 		"active":         boolV(true),
 		"secret_version": num(1),
 	})
@@ -448,7 +448,7 @@ func TestWebhookEndpointResourceCRUD(t *testing.T) {
 		"id":              str(endpointID),
 		"organization_id": str("org_1"),
 		"url":             str("https://hooks.example.com/v2"),
-		"event_types":     strList("project.provisioned", "backup.completed"),
+		"event_types":     strList("instance.createed", "backup.completed"),
 		"active":          boolV(false),
 		"secret_version":  num(1),
 		"signing_secret":  str(secret),
@@ -480,7 +480,7 @@ func TestWebhookEndpointResourceCRUD(t *testing.T) {
 		"id":              str(endpointID),
 		"organization_id": str("org_1"),
 		"url":             str("https://hooks.example.com/v2"),
-		"event_types":     strList("project.provisioned", "backup.completed"),
+		"event_types":     strList("instance.createed", "backup.completed"),
 		"active":          boolV(false),
 		"secret_version":  num(2),
 	})
@@ -517,11 +517,11 @@ func TestWebhookEndpointResourceCRUD(t *testing.T) {
 
 // --- data sources ------------------------------------------------------------
 
-func TestClustersDataSourceNormalizesNullList(t *testing.T) {
+func TestRegionsDataSource(t *testing.T) {
 	ctx := context.Background()
 	client, _ := newTestClient(t)
 
-	d := NewClustersDataSource()
+	d := NewRegionsDataSource()
 	configureDataSource(t, d, client)
 	s := dataSourceSchema(t, d)
 	schemaType := s.Type().TerraformType(ctx)
@@ -531,11 +531,11 @@ func TestClustersDataSourceNormalizesNullList(t *testing.T) {
 	d.Read(ctx, datasource.ReadRequest{Config: tfsdk.Config{Schema: s, Raw: configRaw}}, &readResp)
 	requireNoDiags(t, "read", readResp.Diagnostics)
 
-	var clusters []clusterModel
-	diags := readResp.State.GetAttribute(ctx, path.Root("clusters"), &clusters)
-	requireNoDiags(t, "get clusters", diags)
-	if clusters == nil || len(clusters) != 0 {
-		t.Errorf("clusters = %v, want empty non-null list from a null API response", clusters)
+	var regions []regionModel
+	diags := readResp.State.GetAttribute(ctx, path.Root("regions"), &regions)
+	requireNoDiags(t, "get regions", diags)
+	if len(regions) != 1 || regions[0].Slug.ValueString() != "us-east" {
+		t.Errorf("regions = %v, want one region with slug us-east", regions)
 	}
 }
 

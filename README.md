@@ -100,7 +100,7 @@ output "database_url" {
 
 | Data source | Purpose |
 | --- | --- |
-| [`capydb_clusters`](docs/data-sources/clusters.md) | Active clusters (regions) projects can be placed on. |
+| [`capydb_regions`](docs/data-sources/regions.md) | Placement regions projects can be created in. |
 | [`capydb_project`](docs/data-sources/project.md) | Look up a project by `id` or `slug` (exactly one). |
 | [`capydb_project_connection`](docs/data-sources/project_connection.md) | Pooled/direct connection URLs with credentials embedded (sensitive). |
 | [`capydb_organization`](docs/data-sources/organization.md) | The organization of the configured API key, including billing plan/status. |
@@ -130,7 +130,7 @@ never orphans the project/preview — re-run `terraform apply` or inspect the jo
 ## Null lists
 
 CapyDB list endpoints may serialize empty lists as JSON `null`. The provider's API client
-normalizes every decoded list to an empty, non-nil list, so `clusters`, `scopes`, `event_types`,
+normalizes every decoded list to an empty, non-nil list, so `regions`, `scopes`, `event_types`,
 etc. are always safe to iterate.
 
 ## Secrets in state

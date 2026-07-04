@@ -144,7 +144,7 @@ func (p *capydbProvider) Resources(_ context.Context) []func() resource.Resource
 
 func (p *capydbProvider) DataSources(_ context.Context) []func() datasource.DataSource {
 	return []func() datasource.DataSource{
-		NewClustersDataSource,
+		NewRegionsDataSource,
 		NewProjectDataSource,
 		NewProjectConnectionDataSource,
 		NewOrganizationDataSource,

@@ -39,27 +39,27 @@ type projectResource struct {
 }
 
 type projectModel struct {
-	ID             types.String   `tfsdk:"id"`
-	Name           types.String   `tfsdk:"name"`
-	ClusterID      types.String   `tfsdk:"cluster_id"`
-	Environment    types.String   `tfsdk:"environment"`
-	Slug           types.String   `tfsdk:"slug"`
-	Plan           types.String   `tfsdk:"plan"`
-	Region         types.String   `tfsdk:"region"`
-	State          types.String   `tfsdk:"state"`
-	OrganizationID types.String   `tfsdk:"organization_id"`
-	DatabaseName   types.String   `tfsdk:"database_name"`
-	Timeouts       timeouts.Value `tfsdk:"timeouts"`
+	ID                types.String   `tfsdk:"id"`
+	Name              types.String   `tfsdk:"name"`
+	Region            types.String   `tfsdk:"region"`
+	Environment       types.String   `tfsdk:"environment"`
+	Slug              types.String   `tfsdk:"slug"`
+	Plan              types.String   `tfsdk:"plan"`
+	PrimaryInstanceID types.String   `tfsdk:"primary_instance_id"`
+	State             types.String   `tfsdk:"state"`
+	OrganizationID    types.String   `tfsdk:"organization_id"`
+	DatabaseName      types.String   `tfsdk:"database_name"`
+	Timeouts          timeouts.Value `tfsdk:"timeouts"`
 }
 
 func (m *projectModel) fill(project capydb.Project) {
 	m.ID = types.StringValue(project.ID)
 	m.Name = types.StringValue(project.Name)
-	m.ClusterID = types.StringValue(project.ClusterID)
+	m.Region = types.StringValue(project.Region)
 	m.Environment = types.StringValue(project.Environment)
 	m.Slug = types.StringValue(project.Slug)
 	m.Plan = types.StringValue(project.Plan)
-	m.Region = types.StringValue(project.Region)
+	m.PrimaryInstanceID = types.StringValue(project.PrimaryInstanceID)
 	m.State = types.StringValue(project.State)
 	m.OrganizationID = types.StringValue(project.OrganizationID)
 	m.DatabaseName = types.StringValue(project.DatabaseName)
@@ -90,10 +90,10 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 					stringplanmodifier.RequiresReplace(),
 				},
 			},
-			"cluster_id": schema.StringAttribute{
+			"region": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Cluster to place the project on. Omit to let CapyDB pick. Changing it forces a replacement.",
+				Description: "Region to place the project in. Omit to let CapyDB pick. Changing it forces a replacement.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
 					stringplanmodifier.UseStateForUnknown(),
@@ -119,9 +119,12 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 				Description: "Project plan (e.g. `free`, `launch`, `scale`). Derived from the organization's " +
 					"billing state; never configurable.",
 			},
-			"region": schema.StringAttribute{
+			"primary_instance_id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Region the project's cluster lives in.",
+				Description: "Primary instance the project lives on.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
 			},
 			"state": schema.StringAttribute{
 				Computed:    true,
@@ -167,7 +170,7 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 
 	request := capydb.CreateProjectRequest{
 		Name:        plan.Name.ValueString(),
-		ClusterID:   plan.ClusterID.ValueString(),
+		Region:      plan.Region.ValueString(),
 		Environment: plan.Environment.ValueString(),
 	}
 

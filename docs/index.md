@@ -81,7 +81,7 @@ dashboard.
 
 CapyDB list endpoints may serialize empty lists as JSON `null`. The provider normalizes every list
 it reads to an empty (non-null) list, so expressions like
-`length(data.capydb_clusters.available.clusters)` are always safe.
+`length(data.capydb_regions.available.regions)` are always safe.
 
 ## Schema
 

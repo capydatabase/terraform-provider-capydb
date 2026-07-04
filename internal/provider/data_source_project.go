@@ -29,23 +29,23 @@ type projectDataSource struct {
 }
 
 type projectDataSourceModel struct {
-	ID             types.String `tfsdk:"id"`
-	Slug           types.String `tfsdk:"slug"`
-	Name           types.String `tfsdk:"name"`
-	ClusterID      types.String `tfsdk:"cluster_id"`
-	Environment    types.String `tfsdk:"environment"`
-	Plan           types.String `tfsdk:"plan"`
-	Region         types.String `tfsdk:"region"`
-	State          types.String `tfsdk:"state"`
-	OrganizationID types.String `tfsdk:"organization_id"`
-	DatabaseName   types.String `tfsdk:"database_name"`
+	ID                types.String `tfsdk:"id"`
+	Slug              types.String `tfsdk:"slug"`
+	Name              types.String `tfsdk:"name"`
+	PrimaryInstanceID types.String `tfsdk:"primary_instance_id"`
+	Environment       types.String `tfsdk:"environment"`
+	Plan              types.String `tfsdk:"plan"`
+	Region            types.String `tfsdk:"region"`
+	State             types.String `tfsdk:"state"`
+	OrganizationID    types.String `tfsdk:"organization_id"`
+	DatabaseName      types.String `tfsdk:"database_name"`
 }
 
 func (m *projectDataSourceModel) fill(project capydb.Project) {
 	m.ID = types.StringValue(project.ID)
 	m.Slug = types.StringValue(project.Slug)
 	m.Name = types.StringValue(project.Name)
-	m.ClusterID = types.StringValue(project.ClusterID)
+	m.PrimaryInstanceID = types.StringValue(project.PrimaryInstanceID)
 	m.Environment = types.StringValue(project.Environment)
 	m.Plan = types.StringValue(project.Plan)
 	m.Region = types.StringValue(project.Region)
@@ -72,14 +72,14 @@ func (d *projectDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Computed:    true,
 				Description: "Project slug. Exactly one of `id` or `slug` must be set.",
 			},
-			"name":            schema.StringAttribute{Computed: true, Description: "Project name."},
-			"cluster_id":      schema.StringAttribute{Computed: true, Description: "Cluster the project lives on."},
-			"environment":     schema.StringAttribute{Computed: true, Description: "Environment label."},
-			"plan":            schema.StringAttribute{Computed: true, Description: "Billing-derived project plan."},
-			"region":          schema.StringAttribute{Computed: true, Description: "Region the project's cluster lives in."},
-			"state":           schema.StringAttribute{Computed: true, Description: "Lifecycle state."},
-			"organization_id": schema.StringAttribute{Computed: true, Description: "Owning organization id."},
-			"database_name":   schema.StringAttribute{Computed: true, Description: "Underlying Postgres database name."},
+			"name":                schema.StringAttribute{Computed: true, Description: "Project name."},
+			"primary_instance_id": schema.StringAttribute{Computed: true, Description: "Primary instance the project lives on."},
+			"environment":         schema.StringAttribute{Computed: true, Description: "Environment label."},
+			"plan":                schema.StringAttribute{Computed: true, Description: "Billing-derived project plan."},
+			"region":              schema.StringAttribute{Computed: true, Description: "Region the project lives in."},
+			"state":               schema.StringAttribute{Computed: true, Description: "Lifecycle state."},
+			"organization_id":     schema.StringAttribute{Computed: true, Description: "Owning organization id."},
+			"database_name":       schema.StringAttribute{Computed: true, Description: "Underlying Postgres database name."},
 		},
 	}
 }

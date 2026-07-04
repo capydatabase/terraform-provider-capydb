@@ -57,7 +57,7 @@ func TestCreateProjectSendsAuthAndBody(t *testing.T) {
 		raw, _ := io.ReadAll(r.Body)
 		_ = json.Unmarshal(raw, &gotBody)
 		w.WriteHeader(http.StatusCreated)
-		_, _ = w.Write([]byte(`{"project":{"id":"prj_1","name":"app","slug":"app","state":"provisioning"},"job":{"id":"job_1","type":"project.provision","state":"pending"}}`))
+		_, _ = w.Write([]byte(`{"project":{"id":"prj_1","name":"app","slug":"app","state":"provisioning"},"job":{"id":"job_1","type":"instance.create","state":"pending"}}`))
 	}))
 
 	project, job, err := client.CreateProject(context.Background(), CreateProjectRequest{
@@ -76,8 +76,8 @@ func TestCreateProjectSendsAuthAndBody(t *testing.T) {
 	if gotBody["name"] != "app" || gotBody["environment"] != "production" {
 		t.Errorf("body = %v", gotBody)
 	}
-	if _, ok := gotBody["cluster_id"]; ok {
-		t.Errorf("empty cluster_id should be omitted, body = %v", gotBody)
+	if _, ok := gotBody["region"]; ok {
+		t.Errorf("empty region should be omitted, body = %v", gotBody)
 	}
 	if project.ID != "prj_1" || job.ID != "job_1" {
 		t.Errorf("project = %+v job = %+v", project, job)
@@ -147,8 +147,6 @@ func TestPostNotRetriedOn5xx(t *testing.T) {
 func TestListEndpointsNormalizeNull(t *testing.T) {
 	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.URL.Path {
-		case "/v1/clusters":
-			_, _ = w.Write([]byte(`{"clusters":null}`))
 		case "/v1/projects":
 			_, _ = w.Write([]byte(`{"projects":null}`))
 		case "/v1/projects/prj_1/preview-databases":
@@ -164,10 +162,6 @@ func TestListEndpointsNormalizeNull(t *testing.T) {
 
 	ctx := context.Background()
 
-	clusters, err := client.ListClusters(ctx)
-	if err != nil || clusters == nil || len(clusters) != 0 {
-		t.Errorf("ListClusters = %v, %v; want non-nil empty slice", clusters, err)
-	}
 	projects, err := client.ListProjects(ctx)
 	if err != nil || projects == nil || len(projects) != 0 {
 		t.Errorf("ListProjects = %v, %v; want non-nil empty slice", projects, err)
@@ -186,6 +180,36 @@ func TestListEndpointsNormalizeNull(t *testing.T) {
 	}
 }
 
+func TestListRegions(t *testing.T) {
+	var gotPath string
+	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_, _ = w.Write([]byte(`{"regions":["us-east","eu-central"]}`))
+	}))
+
+	regions, err := client.ListRegions(context.Background())
+	if err != nil {
+		t.Fatalf("ListRegions: %v", err)
+	}
+	if gotPath != "/v1/regions" {
+		t.Errorf("path = %q, want /v1/regions", gotPath)
+	}
+	if len(regions) != 2 || regions[0].Slug != "us-east" || regions[1].Slug != "eu-central" {
+		t.Errorf("regions = %+v", regions)
+	}
+}
+
+func TestListRegionsNormalizesNull(t *testing.T) {
+	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"regions":null}`))
+	}))
+
+	regions, err := client.ListRegions(context.Background())
+	if err != nil || regions == nil || len(regions) != 0 {
+		t.Errorf("ListRegions = %v, %v; want non-nil empty slice", regions, err)
+	}
+}
+
 func TestWaitForJobPollsUntilCompleted(t *testing.T) {
 	var polls atomic.Int32
 	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -193,7 +217,7 @@ func TestWaitForJobPollsUntilCompleted(t *testing.T) {
 		if polls.Add(1) >= 3 {
 			state = "completed"
 		}
-		_, _ = w.Write([]byte(`{"job":{"id":"job_1","type":"project.provision","state":"` + state + `"}}`))
+		_, _ = w.Write([]byte(`{"job":{"id":"job_1","type":"instance.create","state":"` + state + `"}}`))
 	}))
 
 	job, err := client.WaitForJob(context.Background(), "job_1")
@@ -210,7 +234,7 @@ func TestWaitForJobPollsUntilCompleted(t *testing.T) {
 
 func TestWaitForJobFailed(t *testing.T) {
 	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"job":{"id":"job_1","type":"project.provision","state":"failed","error":"disk full"}}`))
+		_, _ = w.Write([]byte(`{"job":{"id":"job_1","type":"instance.create","state":"failed","error":"disk full"}}`))
 	}))
 
 	_, err := client.WaitForJob(context.Background(), "job_1")
@@ -225,7 +249,7 @@ func TestWaitForJobFailed(t *testing.T) {
 
 func TestWaitForJobHonorsContextDeadline(t *testing.T) {
 	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"job":{"id":"job_1","type":"project.provision","state":"running"}}`))
+		_, _ = w.Write([]byte(`{"job":{"id":"job_1","type":"instance.create","state":"running"}}`))
 	}))
 
 	ctx, cancel := context.WithTimeout(context.Background(), 25*time.Millisecond)

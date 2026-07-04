@@ -30,10 +30,10 @@ data "capydb_project" "by_id" {
 ### Read-Only
 
 - `name` (String) Project name.
-- `cluster_id` (String) Cluster the project lives on.
+- `primary_instance_id` (String) Primary instance the project lives on.
 - `environment` (String) Environment label.
 - `plan` (String) Billing-derived project plan.
-- `region` (String) Region the project's cluster lives in.
+- `region` (String) Region the project lives in.
 - `state` (String) Lifecycle state.
 - `organization_id` (String) Owning organization id.
 - `database_name` (String) Underlying Postgres database name.

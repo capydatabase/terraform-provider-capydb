@@ -146,27 +146,27 @@ func (e *JobFailedError) Error() string {
 
 // Project is a CapyDB project (a logical Postgres database).
 type Project struct {
-	ID             string `json:"id"`
-	OrganizationID string `json:"organization_id"`
-	ClusterID      string `json:"cluster_id"`
-	Environment    string `json:"environment,omitempty"`
-	Plan           string `json:"plan,omitempty"`
-	Name           string `json:"name"`
-	Slug           string `json:"slug"`
-	Region         string `json:"region,omitempty"`
-	DatabaseName   string `json:"database_name,omitempty"`
-	State          string `json:"state"`
-	LastError      string `json:"last_error,omitempty"`
-	LatestJobID    string `json:"latest_job_id,omitempty"`
+	ID                string `json:"id"`
+	OrganizationID    string `json:"organization_id"`
+	PrimaryInstanceID string `json:"primary_instance_id"`
+	Environment       string `json:"environment,omitempty"`
+	Plan              string `json:"plan,omitempty"`
+	Name              string `json:"name"`
+	Slug              string `json:"slug"`
+	Region            string `json:"region,omitempty"`
+	DatabaseName      string `json:"database_name,omitempty"`
+	State             string `json:"state"`
+	LastError         string `json:"last_error,omitempty"`
+	LatestJobID       string `json:"latest_job_id,omitempty"`
 }
 
 // CreateProjectRequest creates a project. The plan is derived from the
-// organization's billing state and cannot be chosen here.
+// organization's billing state and cannot be chosen here. Region pins the
+// placement region; omit it to let CapyDB pick.
 type CreateProjectRequest struct {
 	Name        string `json:"name"`
-	ClusterID   string `json:"cluster_id,omitempty"`
-	Environment string `json:"environment,omitempty"`
 	Region      string `json:"region,omitempty"`
+	Environment string `json:"environment,omitempty"`
 	Slug        string `json:"slug,omitempty"`
 }
 
@@ -271,19 +271,9 @@ type CreatedWebhookEndpoint struct {
 	PlaintextSecret string
 }
 
-// Cluster is a database cluster (region) projects can be created on.
-type Cluster struct {
-	ID                          string   `json:"id"`
-	Name                        string   `json:"name"`
-	Provider                    string   `json:"provider"`
-	Region                      string   `json:"region"`
-	PublicHost                  string   `json:"public_host"`
-	DirectPort                  int64    `json:"direct_port"`
-	PooledPort                  int64    `json:"pooled_port"`
-	PostgresVersion             string   `json:"postgres_version"`
-	Extensions                  []string `json:"extensions"`
-	State                       string   `json:"state"`
-	SupportsPointInTimeRecovery bool     `json:"supports_point_in_time_recovery"`
+// Region is a placement region projects can be created in.
+type Region struct {
+	Slug string `json:"slug"`
 }
 
 // Organization is the org record exposed to its members.
@@ -310,15 +300,19 @@ func (c *Client) GetViewer(ctx context.Context) (Viewer, error) {
 	return response, nil
 }
 
-// ListClusters lists active clusters available to the organization.
-func (c *Client) ListClusters(ctx context.Context) ([]Cluster, error) {
+// ListRegions lists the placement regions available to the organization.
+func (c *Client) ListRegions(ctx context.Context) ([]Region, error) {
 	var response struct {
-		Clusters []Cluster `json:"clusters"`
+		Regions []string `json:"regions"`
 	}
-	if err := c.do(ctx, http.MethodGet, "/v1/clusters", nil, &response); err != nil {
+	if err := c.do(ctx, http.MethodGet, "/v1/regions", nil, &response); err != nil {
 		return nil, err
 	}
-	return normalizeList(response.Clusters), nil
+	regions := make([]Region, 0, len(response.Regions))
+	for _, slug := range response.Regions {
+		regions = append(regions, Region{Slug: slug})
+	}
+	return regions, nil
 }
 
 // CreateProject creates a project and returns it plus the asynchronous

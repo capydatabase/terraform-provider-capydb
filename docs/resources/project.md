@@ -16,17 +16,17 @@ here. The CapyDB API does not support renaming projects, so changing `name` forc
 ## Example Usage
 
 ```terraform
-# Minimal: CapyDB picks the cluster, environment defaults server-side.
+# Minimal: CapyDB picks the region, environment defaults server-side.
 resource "capydb_project" "app" {
   name = "my-app"
 }
 
-# Pin the cluster and mark the project as non-production.
-data "capydb_clusters" "available" {}
+# Pin the region and mark the project as non-production.
+data "capydb_regions" "available" {}
 
 resource "capydb_project" "staging" {
   name        = "my-app-staging"
-  cluster_id  = data.capydb_clusters.available.clusters[0].id
+  region      = data.capydb_regions.available.regions[0].slug
   environment = "nonproduction"
 
   timeouts = {
@@ -45,7 +45,7 @@ resource "capydb_project" "staging" {
 
 ### Optional
 
-- `cluster_id` (String) Cluster to place the project on. Omit to let CapyDB pick. Changing it
+- `region` (String) Region to place the project in. Omit to let CapyDB pick. Changing it
   forces a replacement.
 - `environment` (String) Environment label, either `production` or `nonproduction`. Updatable in
   place.
@@ -57,7 +57,7 @@ resource "capydb_project" "staging" {
 - `slug` (String) URL-safe project slug derived from the name.
 - `plan` (String) Project plan (e.g. `free`, `launch`, `scale`). Derived from the organization's
   billing state; never configurable.
-- `region` (String) Region the project's cluster lives in.
+- `primary_instance_id` (String) Primary instance the project lives on.
 - `state` (String) Lifecycle state of the project.
 - `organization_id` (String) Owning organization id.
 - `database_name` (String) Name of the underlying Postgres database.

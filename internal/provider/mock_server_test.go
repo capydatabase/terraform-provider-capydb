@@ -82,10 +82,8 @@ func (m *mockControlPlane) handler() http.Handler {
 		})
 	})
 
-	mux.HandleFunc("GET /v1/clusters", func(w http.ResponseWriter, r *http.Request) {
-		// Deliberately serialize the list as null to exercise the provider's
-		// null-list normalization end to end.
-		_, _ = w.Write([]byte(`{"clusters":null}`))
+	mux.HandleFunc("GET /v1/regions", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{"regions": []string{"us-east"}})
 	})
 
 	mux.HandleFunc("GET /v1/jobs/{jobID}", func(w http.ResponseWriter, r *http.Request) {
@@ -117,24 +115,24 @@ func (m *mockControlPlane) handler() http.Handler {
 		if environment == "" {
 			environment = "production"
 		}
-		clusterID := request.ClusterID
-		if clusterID == "" {
-			clusterID = "cls_auto"
+		region := request.Region
+		if region == "" {
+			region = "eu-central"
 		}
 		project := &capydb.Project{
-			ID:             m.id("prj"),
-			OrganizationID: "org_1",
-			ClusterID:      clusterID,
-			Environment:    environment,
-			Plan:           "launch",
-			Name:           request.Name,
-			Slug:           strings.ReplaceAll(strings.ToLower(request.Name), " ", "-"),
-			Region:         "eu-central",
-			DatabaseName:   "db_" + request.Name,
-			State:          "ready",
+			ID:                m.id("prj"),
+			OrganizationID:    "org_1",
+			PrimaryInstanceID: "inst_auto",
+			Environment:       environment,
+			Plan:              "launch",
+			Name:              request.Name,
+			Slug:              strings.ReplaceAll(strings.ToLower(request.Name), " ", "-"),
+			Region:            region,
+			DatabaseName:      "db_" + request.Name,
+			State:             "ready",
 		}
 		m.projects[project.ID] = project
-		writeJSON(w, http.StatusCreated, map[string]any{"project": project, "job": m.newJob("project.provision")})
+		writeJSON(w, http.StatusCreated, map[string]any{"project": project, "job": m.newJob("instance.create")})
 	})
 
 	mux.HandleFunc("GET /v1/projects", func(w http.ResponseWriter, r *http.Request) {
@@ -234,7 +232,7 @@ func (m *mockControlPlane) handler() http.Handler {
 			UpdatedAt:    time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC),
 		}
 		m.previews[preview.ID] = preview
-		writeJSON(w, http.StatusCreated, map[string]any{"preview": preview, "job": m.newJob("preview.create")})
+		writeJSON(w, http.StatusCreated, map[string]any{"preview": preview, "job": m.newJob("branch.create")})
 	})
 
 	mux.HandleFunc("GET /v1/projects/{projectID}/preview-databases", func(w http.ResponseWriter, r *http.Request) {
@@ -258,7 +256,7 @@ func (m *mockControlPlane) handler() http.Handler {
 			return
 		}
 		delete(m.previews, previewID)
-		writeJSON(w, http.StatusAccepted, map[string]any{"job": m.newJob("preview.delete")})
+		writeJSON(w, http.StatusAccepted, map[string]any{"job": m.newJob("instance.destroy")})
 	})
 
 	mux.HandleFunc("POST /v1/preview-databases/{previewID}/extend", func(w http.ResponseWriter, r *http.Request) {
