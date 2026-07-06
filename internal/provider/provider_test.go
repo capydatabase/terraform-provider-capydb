@@ -288,7 +288,7 @@ func TestPreviewDatabaseResourceCRUD(t *testing.T) {
 	}
 
 	// Update: raising ttl_hours 24 -> 48 must call the extend endpoint with
-	// the 24h delta.
+	// the full new TTL (the API treats ttl_hours as absolute, expiry = now + N).
 	updatePlanRaw := objectValue(t, schemaType, map[string]tftypes.Value{
 		"id":         str(previewID),
 		"project_id": str(project.ID),
@@ -306,8 +306,8 @@ func TestPreviewDatabaseResourceCRUD(t *testing.T) {
 	mock.mu.Lock()
 	extendCalls := append([]int64(nil), mock.extendCalls...)
 	mock.mu.Unlock()
-	if len(extendCalls) != 1 || extendCalls[0] != 24 {
-		t.Errorf("extend calls = %v, want one call extending by 24", extendCalls)
+	if len(extendCalls) != 1 || extendCalls[0] != 48 {
+		t.Errorf("extend calls = %v, want one call with the full ttl 48", extendCalls)
 	}
 	if got := stateString(t, updateResp.State, "ttl_expires_at"); got != "2026-06-12T00:00:00Z" {
 		t.Errorf("ttl_expires_at after extend = %q", got)

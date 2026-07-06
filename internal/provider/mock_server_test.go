@@ -274,7 +274,9 @@ func (m *mockControlPlane) handler() http.Handler {
 		}
 		hours := request["ttl_hours"]
 		m.extendCalls = append(m.extendCalls, hours)
-		preview.TTLExpiresAt = preview.TTLExpiresAt.Add(time.Duration(hours) * time.Hour)
+		// Mirror the real backend: ttl_hours is an absolute new TTL from "now"
+		// (the mock's fixed clock), not a delta on the current expiry.
+		preview.TTLExpiresAt = time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC).Add(time.Duration(hours) * time.Hour)
 		writeJSON(w, http.StatusOK, map[string]any{"preview": preview})
 	})
 

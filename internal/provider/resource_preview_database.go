@@ -10,7 +10,6 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/stringvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
-	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
@@ -94,8 +93,8 @@ func (r *previewDatabaseResource) Metadata(_ context.Context, req resource.Metad
 func (r *previewDatabaseResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A disposable CapyDB preview/branch database for a project. Creation and deletion run as " +
-			"asynchronous jobs which this resource waits on. Previews expire after their TTL; increasing " +
-			"`ttl_hours` extends the expiry via the extend endpoint, decreasing it forces a replacement.",
+			"asynchronous jobs which this resource waits on. Previews expire after their TTL; updating " +
+			"`ttl_hours` resets the expiry in place to that many hours from the time of the update.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,
@@ -135,22 +134,10 @@ func (r *previewDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 			},
 			"ttl_hours": schema.Int64Attribute{
 				Required: true,
-				Description: "Time to live in hours. Increasing it extends the preview's expiry by the " +
-					"difference; decreasing it forces a replacement.",
+				Description: "Time to live in hours, counted from when it is set. Updating it resets the " +
+					"preview's expiry in place to `ttl_hours` from the time of the update.",
 				Validators: []validator.Int64{
 					int64validator.AtLeast(1),
-				},
-				PlanModifiers: []planmodifier.Int64{
-					int64planmodifier.RequiresReplaceIf(
-						func(_ context.Context, req planmodifier.Int64Request, resp *int64planmodifier.RequiresReplaceIfFuncResponse) {
-							if !req.StateValue.IsNull() && !req.PlanValue.IsNull() &&
-								req.PlanValue.ValueInt64() < req.StateValue.ValueInt64() {
-								resp.RequiresReplace = true
-							}
-						},
-						"Decreasing ttl_hours forces a replacement; the API only supports extending TTLs.",
-						"Decreasing `ttl_hours` forces a replacement; the API only supports extending TTLs.",
-					),
 				},
 			},
 			"state": schema.StringAttribute{
@@ -268,11 +255,11 @@ func (r *previewDatabaseResource) Update(ctx context.Context, req resource.Updat
 		return
 	}
 
-	// ttl_hours is the only in-place updatable attribute. The API extends
-	// TTLs by a relative number of hours, so send the configured delta.
-	delta := plan.TTLHours.ValueInt64() - state.TTLHours.ValueInt64()
-	if delta > 0 {
-		preview, err := r.client.ExtendPreviewDatabase(ctx, state.ID.ValueString(), delta)
+	// ttl_hours is the only in-place updatable attribute. The API treats the
+	// value as an absolute new TTL from now (expiry becomes now + ttl_hours),
+	// so send the full planned value, never a delta.
+	if !plan.TTLHours.Equal(state.TTLHours) {
+		preview, err := r.client.ExtendPreviewDatabase(ctx, state.ID.ValueString(), plan.TTLHours.ValueInt64())
 		if err != nil {
 			resp.Diagnostics.AddError("Error extending CapyDB preview database TTL", err.Error())
 			return

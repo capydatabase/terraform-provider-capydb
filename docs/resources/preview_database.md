@@ -10,8 +10,9 @@ A disposable CapyDB preview/branch database for a project. Creation and deletion
 asynchronous jobs which this resource waits on (bounded by the `timeouts` attribute, 20 minutes by
 default).
 
-Previews expire after their TTL. Increasing `ttl_hours` extends the expiry in place via the extend
-endpoint; decreasing it forces a replacement (the API only supports extending TTLs).
+Previews expire after their TTL. `ttl_hours` is counted from the moment it is set: updating it
+resets the expiry in place to that many hours from the time of the update (the API treats the
+value as an absolute new TTL, not a delta).
 
 ~> Import is not supported for this resource: the plaintext-free preview lookup requires the parent
 project id, and the API has no direct preview GET endpoint.
@@ -36,8 +37,8 @@ resource "capydb_preview_database" "pr" {
 ### Required
 
 - `project_id` (String) Project the preview belongs to. Changing it forces a replacement.
-- `ttl_hours` (Number) Time to live in hours (minimum 1). Increasing it extends the preview's
-  expiry by the difference; decreasing it forces a replacement.
+- `ttl_hours` (Number) Time to live in hours (minimum 1), counted from when it is set. Updating it
+  resets the preview's expiry in place to `ttl_hours` from the time of the update.
 
 ### Optional
 

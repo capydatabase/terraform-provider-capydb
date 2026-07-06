@@ -439,7 +439,8 @@ func (c *Client) DeletePreviewDatabase(ctx context.Context, previewID string) (J
 	return response.Job, nil
 }
 
-// ExtendPreviewDatabase extends the preview's TTL by ttlHours.
+// ExtendPreviewDatabase resets the preview's TTL so it expires ttlHours from
+// now; the API treats ttl_hours as an absolute new TTL, not a delta.
 func (c *Client) ExtendPreviewDatabase(ctx context.Context, previewID string, ttlHours int64) (PreviewDatabase, error) {
 	var response struct {
 		Preview PreviewDatabase `json:"preview"`
