@@ -32,11 +32,11 @@ func TestNewClientDefaultsBaseURL(t *testing.T) {
 	if err != nil {
 		t.Fatalf("NewClient: %v", err)
 	}
-	if client.baseURL != DefaultBaseURL {
-		t.Fatalf("baseURL = %q, want %q", client.baseURL, DefaultBaseURL)
+	if client.doer.BaseURL != DefaultBaseURL {
+		t.Fatalf("baseURL = %q, want %q", client.doer.BaseURL, DefaultBaseURL)
 	}
-	if client.userAgent != "terraform-provider-capydb/1.0.0" {
-		t.Fatalf("userAgent = %q", client.userAgent)
+	if client.doer.UserAgent != "terraform-provider-capydb/1.0.0" {
+		t.Fatalf("userAgent = %q", client.doer.UserAgent)
 	}
 }
 

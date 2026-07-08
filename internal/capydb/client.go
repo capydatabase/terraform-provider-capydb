@@ -12,16 +12,14 @@
 package capydb
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strings"
 	"time"
+
+	"github.com/capy-base/capydb/capydbclient"
 )
 
 // DefaultBaseURL is the public CapyDB API bridge.
@@ -29,36 +27,18 @@ const DefaultBaseURL = "https://capydb.dev/api/capydb"
 
 const defaultHTTPTimeout = 30 * time.Second
 
-// APIError is a non-2xx control-plane response.
-type APIError struct {
-	Message    string
-	StatusCode int
-}
-
-func (e *APIError) Error() string {
-	if e.Message == "" {
-		return fmt.Sprintf("capydb api request failed with status %d", e.StatusCode)
-	}
-	return fmt.Sprintf("capydb api request failed with status %d: %s", e.StatusCode, e.Message)
-}
+// APIError is a non-2xx control-plane response. It is the shared transport error
+// type; callers match it with errors.As and IsNotFound as before.
+type APIError = capydbclient.APIError
 
 // IsNotFound reports whether err is an APIError with HTTP status 404.
 func IsNotFound(err error) bool {
-	var apiErr *APIError
-	return errors.As(err, &apiErr) && apiErr.StatusCode == http.StatusNotFound
+	return capydbclient.IsNotFound(err)
 }
 
 // Client talks to the CapyDB control plane.
 type Client struct {
-	apiKey     string
-	baseURL    string
-	httpClient *http.Client
-	userAgent  string
-	// retryBackoff holds the delay before each idempotent GET attempt. The
-	// first entry is the delay before the initial attempt (zero), so the
-	// slice length equals the total number of attempts. Non-GET requests are
-	// never retried.
-	retryBackoff []time.Duration
+	doer *capydbclient.Doer
 	// jobPollInterval is the delay between job state polls in WaitForJob.
 	jobPollInterval time.Duration
 }
@@ -68,13 +48,13 @@ type Option func(*Client)
 
 // WithHTTPClient replaces the underlying *http.Client.
 func WithHTTPClient(httpClient *http.Client) Option {
-	return func(c *Client) { c.httpClient = httpClient }
+	return func(c *Client) { c.doer.HTTPClient = httpClient }
 }
 
 // WithRetryBackoff replaces the GET retry schedule. The slice length is the
 // total number of attempts; each entry is the delay before that attempt.
 func WithRetryBackoff(backoff []time.Duration) Option {
-	return func(c *Client) { c.retryBackoff = backoff }
+	return func(c *Client) { c.doer.RetryBackoff = backoff }
 }
 
 // WithJobPollInterval sets the delay between job polls in WaitForJob.
@@ -99,11 +79,13 @@ func NewClient(baseURL, apiKey, version string, opts ...Option) (*Client, error)
 	}
 
 	client := &Client{
-		apiKey:          strings.TrimSpace(apiKey),
-		baseURL:         trimmedBase,
-		httpClient:      &http.Client{Timeout: defaultHTTPTimeout},
-		userAgent:       "terraform-provider-capydb/" + versionToken,
-		retryBackoff:    []time.Duration{0, time.Second, 3 * time.Second},
+		doer: &capydbclient.Doer{
+			APIKey:       strings.TrimSpace(apiKey),
+			BaseURL:      trimmedBase,
+			HTTPClient:   &http.Client{Timeout: defaultHTTPTimeout},
+			UserAgent:    "terraform-provider-capydb/" + versionToken,
+			RetryBackoff: []time.Duration{0, time.Second, 3 * time.Second},
+		},
 		jobPollInterval: 5 * time.Second,
 	}
 	for _, opt := range opts {
@@ -347,7 +329,7 @@ func (c *Client) ListProjects(ctx context.Context) ([]Project, error) {
 	if err := c.do(ctx, http.MethodGet, "/v1/projects", nil, &response); err != nil {
 		return nil, err
 	}
-	return normalizeList(response.Projects), nil
+	return capydbclient.NormalizeList(response.Projects), nil
 }
 
 // UpdateProject updates mutable project metadata (currently only the
@@ -406,7 +388,7 @@ func (c *Client) ListPreviewDatabases(ctx context.Context, projectID string) ([]
 	if err := c.do(ctx, http.MethodGet, "/v1/projects/"+url.PathEscape(projectID)+"/preview-databases", nil, &response); err != nil {
 		return nil, err
 	}
-	return normalizeList(response.PreviewDatabases), nil
+	return capydbclient.NormalizeList(response.PreviewDatabases), nil
 }
 
 // GetPreviewDatabase resolves a single preview database by listing the
@@ -474,7 +456,7 @@ func (c *Client) CreateAPIKey(ctx context.Context, orgID string, request CreateA
 	if err := c.do(ctx, http.MethodPost, "/v1/organizations/"+url.PathEscape(orgID)+"/api-keys", request, &response); err != nil {
 		return CreatedAPIKey{}, err
 	}
-	response.APIKey.Scopes = normalizeList(response.APIKey.Scopes)
+	response.APIKey.Scopes = capydbclient.NormalizeList(response.APIKey.Scopes)
 	return CreatedAPIKey{APIKey: response.APIKey, PlaintextKey: response.PlaintextKey}, nil
 }
 
@@ -486,9 +468,9 @@ func (c *Client) ListAPIKeys(ctx context.Context, orgID string) ([]APIKey, error
 	if err := c.do(ctx, http.MethodGet, "/v1/organizations/"+url.PathEscape(orgID)+"/api-keys", nil, &response); err != nil {
 		return nil, err
 	}
-	keys := normalizeList(response.APIKeys)
+	keys := capydbclient.NormalizeList(response.APIKeys)
 	for i := range keys {
-		keys[i].Scopes = normalizeList(keys[i].Scopes)
+		keys[i].Scopes = capydbclient.NormalizeList(keys[i].Scopes)
 	}
 	return keys, nil
 }
@@ -526,7 +508,7 @@ func (c *Client) CreateWebhookEndpoint(ctx context.Context, orgID string, reques
 	if err := c.do(ctx, http.MethodPost, "/v1/organizations/"+url.PathEscape(orgID)+"/webhook-endpoints", request, &response); err != nil {
 		return CreatedWebhookEndpoint{}, err
 	}
-	response.Endpoint.EventTypes = normalizeList(response.Endpoint.EventTypes)
+	response.Endpoint.EventTypes = capydbclient.NormalizeList(response.Endpoint.EventTypes)
 	return CreatedWebhookEndpoint{Endpoint: response.Endpoint, PlaintextSecret: response.PlaintextSecret}, nil
 }
 
@@ -538,9 +520,9 @@ func (c *Client) ListWebhookEndpoints(ctx context.Context, orgID string) ([]Webh
 	if err := c.do(ctx, http.MethodGet, "/v1/organizations/"+url.PathEscape(orgID)+"/webhook-endpoints", nil, &response); err != nil {
 		return nil, err
 	}
-	endpoints := normalizeList(response.WebhookEndpoints)
+	endpoints := capydbclient.NormalizeList(response.WebhookEndpoints)
 	for i := range endpoints {
-		endpoints[i].EventTypes = normalizeList(endpoints[i].EventTypes)
+		endpoints[i].EventTypes = capydbclient.NormalizeList(endpoints[i].EventTypes)
 	}
 	return endpoints, nil
 }
@@ -573,7 +555,7 @@ func (c *Client) UpdateWebhookEndpoint(ctx context.Context, orgID, endpointID st
 	if err := c.do(ctx, http.MethodPatch, path, request, &response); err != nil {
 		return WebhookEndpoint{}, err
 	}
-	response.Endpoint.EventTypes = normalizeList(response.Endpoint.EventTypes)
+	response.Endpoint.EventTypes = capydbclient.NormalizeList(response.Endpoint.EventTypes)
 	return response.Endpoint, nil
 }
 
@@ -594,7 +576,7 @@ func (c *Client) RotateWebhookEndpointSecret(ctx context.Context, orgID, endpoin
 	if err := c.do(ctx, http.MethodPost, path, nil, &response); err != nil {
 		return CreatedWebhookEndpoint{}, err
 	}
-	response.Endpoint.EventTypes = normalizeList(response.Endpoint.EventTypes)
+	response.Endpoint.EventTypes = capydbclient.NormalizeList(response.Endpoint.EventTypes)
 	return CreatedWebhookEndpoint{Endpoint: response.Endpoint, PlaintextSecret: response.PlaintextSecret}, nil
 }
 
@@ -633,103 +615,9 @@ func (c *Client) WaitForJob(ctx context.Context, jobID string) (Job, error) {
 	}
 }
 
-// normalizeList converts a nil slice (the control plane may serialize empty
-// lists as JSON null) into an empty, non-nil slice.
-func normalizeList[T any](list []T) []T {
-	if list == nil {
-		return []T{}
-	}
-	return list
-}
-
-// do executes an API request. Idempotent GET requests are retried on network
-// errors and 5xx responses following c.retryBackoff. Non-GET requests are
-// never retried.
+// do executes an API request via the shared transport. Idempotent GET requests
+// are retried on network errors and 5xx responses following the client's retry
+// backoff; non-GET requests are never retried.
 func (c *Client) do(ctx context.Context, method, path string, payload any, dest any) error {
-	var encoded []byte
-	if payload != nil {
-		var err error
-		encoded, err = json.Marshal(payload)
-		if err != nil {
-			return fmt.Errorf("encode request body: %w", err)
-		}
-	}
-
-	backoff := []time.Duration{0}
-	if method == http.MethodGet && len(c.retryBackoff) > 0 {
-		backoff = c.retryBackoff
-	}
-
-	var lastErr error
-	for attempt, delay := range backoff {
-		if delay > 0 {
-			select {
-			case <-ctx.Done():
-				return ctx.Err()
-			case <-time.After(delay):
-			}
-		}
-
-		retryable, err := c.doOnce(ctx, method, path, encoded, payload != nil, dest)
-		if err == nil {
-			return nil
-		}
-		lastErr = err
-		if !retryable || ctx.Err() != nil || attempt == len(backoff)-1 {
-			return err
-		}
-	}
-	return lastErr
-}
-
-// doOnce performs a single HTTP round trip. The boolean return reports
-// whether the failure is retryable (network error or 5xx response).
-func (c *Client) doOnce(ctx context.Context, method, path string, encoded []byte, hasBody bool, dest any) (bool, error) {
-	var body io.Reader
-	if hasBody {
-		body = bytes.NewReader(encoded)
-	}
-
-	request, err := http.NewRequestWithContext(ctx, method, c.baseURL+path, body)
-	if err != nil {
-		return false, fmt.Errorf("build request: %w", err)
-	}
-	request.Header.Set("Accept", "application/json")
-	request.Header.Set("User-Agent", c.userAgent)
-	if hasBody {
-		request.Header.Set("Content-Type", "application/json")
-	}
-	if c.apiKey != "" {
-		request.Header.Set("Authorization", "Bearer "+c.apiKey)
-	}
-
-	response, err := c.httpClient.Do(request)
-	if err != nil {
-		return true, fmt.Errorf("perform request: %w", err)
-	}
-	defer func() { _ = response.Body.Close() }()
-
-	raw, err := io.ReadAll(response.Body)
-	if err != nil {
-		return true, fmt.Errorf("read response body: %w", err)
-	}
-
-	if response.StatusCode < 200 || response.StatusCode >= 300 {
-		var payload struct {
-			Error string `json:"error"`
-		}
-		_ = json.Unmarshal(raw, &payload)
-		return response.StatusCode >= 500, &APIError{
-			Message:    payload.Error,
-			StatusCode: response.StatusCode,
-		}
-	}
-
-	if dest == nil || len(raw) == 0 {
-		return false, nil
-	}
-	if err := json.Unmarshal(raw, dest); err != nil {
-		return false, fmt.Errorf("decode response body: %w", err)
-	}
-	return false, nil
+	return c.doer.Do(ctx, method, path, payload, dest)
 }
