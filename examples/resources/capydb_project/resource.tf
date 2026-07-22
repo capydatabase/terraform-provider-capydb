@@ -9,7 +9,7 @@ data "capydb_regions" "available" {}
 resource "capydb_project" "staging" {
   name        = "my-app-staging"
   region      = data.capydb_regions.available.regions[0].slug
-  environment = "nonproduction"
+  environment = "non_production"
 
   timeouts = {
     create = "30m"

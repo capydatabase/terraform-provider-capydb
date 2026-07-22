@@ -40,7 +40,7 @@ func (d *projectConnectionDataSource) Schema(_ context.Context, _ datasource.Sch
 	resp.Schema = schema.Schema{
 		Description: "Fetches a project's connection strings with the current credentials embedded. " +
 			"Requires an API key with the `credentials:read` scope. The URLs are sensitive and end up in " +
-			"Terraform state — treat the state file accordingly.",
+			"Terraform state - treat the state file accordingly.",
 		Attributes: map[string]schema.Attribute{
 			"project_id": schema.StringAttribute{
 				Required:    true,
@@ -49,7 +49,7 @@ func (d *projectConnectionDataSource) Schema(_ context.Context, _ datasource.Sch
 			"pooled_url": schema.StringAttribute{
 				Computed:    true,
 				Sensitive:   true,
-				Description: "Pooled (PgBouncer) connection URL — the default for applications.",
+				Description: "Pooled (PgBouncer) connection URL - the default for applications.",
 			},
 			"direct_url": schema.StringAttribute{
 				Computed:    true,

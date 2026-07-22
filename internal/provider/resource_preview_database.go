@@ -137,7 +137,7 @@ func (r *previewDatabaseResource) Schema(ctx context.Context, _ resource.SchemaR
 				Description: "Time to live in hours, counted from when it is set. Updating it resets the " +
 					"preview's expiry in place to `ttl_hours` from the time of the update.",
 				Validators: []validator.Int64{
-					int64validator.AtLeast(1),
+					int64validator.Between(1, 168),
 				},
 			},
 			"state": schema.StringAttribute{
@@ -186,7 +186,7 @@ func (r *previewDatabaseResource) Create(ctx context.Context, req resource.Creat
 	preview, job, err := r.client.CreatePreviewDatabase(ctx, projectID, capydb.CreatePreviewRequest{
 		Name:     plan.Name.ValueString(),
 		Mode:     plan.Mode.ValueString(),
-		TTLHours: plan.TTLHours.ValueInt64(),
+		TTLHours: int(plan.TTLHours.ValueInt64()),
 	})
 	if err != nil {
 		resp.Diagnostics.AddError("Error creating CapyDB preview database", err.Error())

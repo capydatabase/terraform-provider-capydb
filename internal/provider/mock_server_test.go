@@ -115,9 +115,25 @@ func (m *mockControlPlane) handler() http.Handler {
 		if environment == "" {
 			environment = "production"
 		}
+		// Mirror the real backend's enum instead of echoing arbitrary values -
+		// an echo here previously pinned the provider's "nonproduction" bug.
+		if environment != "production" && environment != "non_production" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "environment must be one of production or non_production"})
+			return
+		}
 		region := request.Region
 		if region == "" {
 			region = "eu-central"
+		}
+		// Mirror the real backend's validation + default (service.
+		// SupportedPostgresVersions / DefaultPostgresVersion).
+		postgresVersion := request.PostgresVersion
+		if postgresVersion == "" {
+			postgresVersion = "17"
+		}
+		if postgresVersion != "16" && postgresVersion != "17" && postgresVersion != "18" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported postgres version " + postgresVersion})
+			return
 		}
 		project := &capydb.Project{
 			ID:                m.id("prj"),
@@ -126,6 +142,7 @@ func (m *mockControlPlane) handler() http.Handler {
 			Environment:       environment,
 			Plan:              "launch",
 			Name:              request.Name,
+			PostgresVersion:   postgresVersion,
 			Slug:              strings.ReplaceAll(strings.ToLower(request.Name), " ", "-"),
 			Region:            region,
 			DatabaseName:      "db_" + request.Name,
@@ -170,6 +187,10 @@ func (m *mockControlPlane) handler() http.Handler {
 			return
 		}
 		if request.Environment != nil {
+			if *request.Environment != "production" && *request.Environment != "non_production" {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "environment must be one of production or non_production"})
+				return
+			}
 			project.Environment = *request.Environment
 			m.patchedEnvs = append(m.patchedEnvs, *request.Environment)
 		}
@@ -297,7 +318,7 @@ func (m *mockControlPlane) handler() http.Handler {
 			Scopes:         request.Scopes,
 			Source:         "api",
 			IsActive:       true,
-			CreatedAt:      "2026-06-10T00:00:00Z",
+			CreatedAt:      time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC),
 		}
 		m.apiKeys[key.ID] = key
 		writeJSON(w, http.StatusCreated, map[string]any{
@@ -325,7 +346,8 @@ func (m *mockControlPlane) handler() http.Handler {
 			return
 		}
 		key.IsActive = false
-		key.RevokedAt = "2026-06-10T01:00:00Z"
+		revoked := time.Date(2026, 6, 10, 1, 0, 0, 0, time.UTC)
+		key.RevokedAt = &revoked
 		writeJSON(w, http.StatusOK, map[string]any{"revoked": true})
 	})
 
@@ -348,8 +370,8 @@ func (m *mockControlPlane) handler() http.Handler {
 			Description:    request.Description,
 			EventTypes:     eventTypes,
 			IsActive:       true,
-			CreatedAt:      "2026-06-10T00:00:00Z",
-			UpdatedAt:      "2026-06-10T00:00:00Z",
+			CreatedAt:      time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC),
+			UpdatedAt:      time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC),
 		}
 		m.webhooks[endpoint.ID] = endpoint
 		writeJSON(w, http.StatusCreated, map[string]any{

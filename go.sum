@@ -1,5 +1,9 @@
 github.com/bufbuild/protocompile v0.14.1 h1:iA73zAf/fyljNjQKwYzUHD6AD4R8KMasmwa/FBatYVw=
 github.com/bufbuild/protocompile v0.14.1/go.mod h1:ppVdAIhbr2H8asPk6k4pY7t9zB1OU5DoEw9xY/FUi1c=
+github.com/capy-base/capydbclient v1.0.1 h1:gk3j36j4/3YgSJBX5z0ClxUE4P1oLYxDvR3d/rlg1Vg=
+github.com/capy-base/capydbclient v1.0.1/go.mod h1:5uXju+KxyNymadqVueekagiJsG5DKCoI53WZ8W31lGM=
+github.com/capy-base/capydbclient v1.1.0 h1:GkRBRIC5o2O9FWs1egjd+J+HDgwDsd+Bck4G6yjYVkQ=
+github.com/capy-base/capydbclient v1.1.0/go.mod h1:b+fxc38CiNtUBgmJDqA3dkRWwMyvL3XmSexHk5vPjTs=
 github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
 github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=

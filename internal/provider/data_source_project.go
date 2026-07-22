@@ -35,6 +35,7 @@ type projectDataSourceModel struct {
 	PrimaryInstanceID types.String `tfsdk:"primary_instance_id"`
 	Environment       types.String `tfsdk:"environment"`
 	Plan              types.String `tfsdk:"plan"`
+	PostgresVersion   types.String `tfsdk:"postgres_version"`
 	Region            types.String `tfsdk:"region"`
 	State             types.String `tfsdk:"state"`
 	OrganizationID    types.String `tfsdk:"organization_id"`
@@ -48,6 +49,7 @@ func (m *projectDataSourceModel) fill(project capydb.Project) {
 	m.PrimaryInstanceID = types.StringValue(project.PrimaryInstanceID)
 	m.Environment = types.StringValue(project.Environment)
 	m.Plan = types.StringValue(project.Plan)
+	m.PostgresVersion = types.StringValue(project.PostgresVersion)
 	m.Region = types.StringValue(project.Region)
 	m.State = types.StringValue(project.State)
 	m.OrganizationID = types.StringValue(project.OrganizationID)
@@ -73,9 +75,10 @@ func (d *projectDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 				Description: "Project slug. Exactly one of `id` or `slug` must be set.",
 			},
 			"name":                schema.StringAttribute{Computed: true, Description: "Project name."},
-			"primary_instance_id": schema.StringAttribute{Computed: true, Description: "Primary instance the project lives on."},
+			"primary_instance_id": schema.StringAttribute{Computed: true, Description: "Identifier of the database cell the project runs in."},
 			"environment":         schema.StringAttribute{Computed: true, Description: "Environment label."},
 			"plan":                schema.StringAttribute{Computed: true, Description: "Billing-derived project plan."},
+			"postgres_version":    schema.StringAttribute{Computed: true, Description: "Postgres major version of the database."},
 			"region":              schema.StringAttribute{Computed: true, Description: "Region the project lives in."},
 			"state":               schema.StringAttribute{Computed: true, Description: "Lifecycle state."},
 			"organization_id":     schema.StringAttribute{Computed: true, Description: "Owning organization id."},

@@ -26,5 +26,5 @@ output "billing_plan" {
 - `id` (String) Organization id.
 - `name` (String) Organization name.
 - `slug` (String) Organization slug.
-- `billing_plan` (String) Current billing plan (e.g. `free`, `launch`, `scale`).
+- `billing_plan` (String) Current billing plan (e.g. `vibe`, `ship`, `business`).
 - `billing_status` (String) Billing subscription status.

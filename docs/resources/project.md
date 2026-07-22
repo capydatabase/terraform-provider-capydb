@@ -27,7 +27,7 @@ data "capydb_regions" "available" {}
 resource "capydb_project" "staging" {
   name        = "my-app-staging"
   region      = data.capydb_regions.available.regions[0].slug
-  environment = "nonproduction"
+  environment = "non_production"
 
   timeouts = {
     create = "30m"
@@ -47,7 +47,7 @@ resource "capydb_project" "staging" {
 
 - `region` (String) Region to place the project in. Omit to let CapyDB pick. Changing it
   forces a replacement.
-- `environment` (String) Environment label, either `production` or `nonproduction`. Updatable in
+- `environment` (String) Environment label, either `production` or `non_production`. Updatable in
   place.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
@@ -55,9 +55,9 @@ resource "capydb_project" "staging" {
 
 - `id` (String) Project id.
 - `slug` (String) URL-safe project slug derived from the name.
-- `plan` (String) Project plan (e.g. `free`, `launch`, `scale`). Derived from the organization's
+- `plan` (String) Project plan (e.g. `vibe`, `ship`, `business`). Derived from the organization's
   billing state; never configurable.
-- `primary_instance_id` (String) Primary instance the project lives on.
+- `primary_instance_id` (String) Identifier of the database cell the project runs in.
 - `state` (String) Lifecycle state of the project.
 - `organization_id` (String) Owning organization id.
 - `database_name` (String) Name of the underlying Postgres database.

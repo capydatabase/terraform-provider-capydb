@@ -99,7 +99,7 @@ func (r *webhookEndpointResource) Schema(_ context.Context, _ resource.SchemaReq
 		Description: "An outbound CapyDB webhook endpoint for the organization. The signing secret is returned " +
 			"by the API exactly once at creation (and again on rotation) and is stored in state as the sensitive " +
 			"`signing_secret` attribute; drift on the secret itself cannot be detected. Bump `secret_version` to " +
-			"rotate the secret — the previous secret stops validating immediately.",
+			"rotate the secret - the previous secret stops validating immediately.",
 		Attributes: map[string]schema.Attribute{
 			"id": schema.StringAttribute{
 				Computed:    true,

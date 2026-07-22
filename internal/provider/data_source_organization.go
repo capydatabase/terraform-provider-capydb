@@ -43,7 +43,7 @@ func (d *organizationDataSource) Schema(_ context.Context, _ datasource.SchemaRe
 			"id":             schema.StringAttribute{Computed: true, Description: "Organization id."},
 			"name":           schema.StringAttribute{Computed: true, Description: "Organization name."},
 			"slug":           schema.StringAttribute{Computed: true, Description: "Organization slug."},
-			"billing_plan":   schema.StringAttribute{Computed: true, Description: "Current billing plan (e.g. free, launch, scale)."},
+			"billing_plan":   schema.StringAttribute{Computed: true, Description: "Current billing plan (e.g. vibe, ship, business)."},
 			"billing_status": schema.StringAttribute{Computed: true, Description: "Billing subscription status."},
 		},
 	}

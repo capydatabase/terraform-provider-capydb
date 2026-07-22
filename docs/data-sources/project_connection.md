@@ -9,7 +9,7 @@ description: |-
 Fetches a project's connection strings with the current credentials embedded. Requires an API key
 with the `credentials:read` scope.
 
-~> The URLs embed live database credentials and end up in Terraform state — treat the state file
+~> The URLs embed live database credentials and end up in Terraform state - treat the state file
 accordingly.
 
 ## Example Usage
@@ -37,7 +37,7 @@ output "database_url" {
 
 ### Read-Only
 
-- `pooled_url` (String, Sensitive) Pooled (PgBouncer) connection URL — the default for
+- `pooled_url` (String, Sensitive) Pooled (PgBouncer) connection URL - the default for
   applications.
 - `direct_url` (String, Sensitive) Direct Postgres connection URL for migrations and long-lived
   sessions.

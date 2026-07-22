@@ -7,7 +7,7 @@
 //   - Mutating lifecycle operations (project provision/delete, preview
 //     create/delete) return asynchronous job rows that must be polled until
 //     they reach a terminal state.
-//   - List endpoints may serialize empty Go slices as JSON null — every list
+//   - List endpoints may serialize empty Go slices as JSON null - every list
 //     decode is normalized to a non-nil slice.
 package capydb
 
@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/capy-base/capydb/capydbclient"
+	"github.com/capy-base/capydbclient"
 )
 
 // DefaultBaseURL is the public CapyDB API bridge.
@@ -96,17 +96,10 @@ func NewClient(baseURL, apiKey, version string, opts ...Option) (*Client, error)
 
 // Job is an asynchronous control-plane job. Poll until State is "completed"
 // or "failed".
-type Job struct {
-	ID                string `json:"id"`
-	Type              string `json:"type"`
-	State             string `json:"state"`
-	Error             string `json:"error,omitempty"`
-	ProjectID         string `json:"project_id,omitempty"`
-	PreviewDatabaseID string `json:"preview_database_id,omitempty"`
-	OrganizationID    string `json:"organization_id,omitempty"`
-	Attempts          int    `json:"attempts"`
-	MaxAttempts       int    `json:"max_attempts"`
-}
+// Job, and the other shared control-plane entities/request bodies below, come
+// from the shared capydbclient module (single source of truth mirrored from the
+// OpenAPI spec) rather than being re-declared here.
+type Job = capydbclient.Job
 
 // Terminal job states.
 const (
@@ -127,30 +120,11 @@ func (e *JobFailedError) Error() string {
 }
 
 // Project is a CapyDB project (a logical Postgres database).
-type Project struct {
-	ID                string `json:"id"`
-	OrganizationID    string `json:"organization_id"`
-	PrimaryInstanceID string `json:"primary_instance_id"`
-	Environment       string `json:"environment,omitempty"`
-	Plan              string `json:"plan,omitempty"`
-	Name              string `json:"name"`
-	Slug              string `json:"slug"`
-	Region            string `json:"region,omitempty"`
-	DatabaseName      string `json:"database_name,omitempty"`
-	State             string `json:"state"`
-	LastError         string `json:"last_error,omitempty"`
-	LatestJobID       string `json:"latest_job_id,omitempty"`
-}
+type Project = capydbclient.Project
 
 // CreateProjectRequest creates a project. The plan is derived from the
-// organization's billing state and cannot be chosen here. Region pins the
-// placement region; omit it to let CapyDB pick.
-type CreateProjectRequest struct {
-	Name        string `json:"name"`
-	Region      string `json:"region,omitempty"`
-	Environment string `json:"environment,omitempty"`
-	Slug        string `json:"slug,omitempty"`
-}
+// organization's billing state and cannot be chosen here.
+type CreateProjectRequest = capydbclient.CreateProjectRequest
 
 // UpdateProjectRequest updates mutable project metadata. Only the environment
 // label is mutable; nil leaves it unchanged.
@@ -159,11 +133,7 @@ type UpdateProjectRequest struct {
 }
 
 // ConnectionInfo carries the credential-embedded connection URLs.
-type ConnectionInfo struct {
-	DirectURL string `json:"direct_url,omitempty"`
-	PooledURL string `json:"pooled_url,omitempty"`
-	Username  string `json:"username"`
-}
+type ConnectionInfo = capydbclient.ConnectionInfo
 
 // PreviewDatabase is a disposable preview/branch database.
 type PreviewDatabase struct {
@@ -182,33 +152,14 @@ type PreviewDatabase struct {
 }
 
 // CreatePreviewRequest creates a preview database.
-type CreatePreviewRequest struct {
-	Name     string `json:"name,omitempty"`
-	Mode     string `json:"mode,omitempty"`
-	TTLHours int64  `json:"ttl_hours,omitempty"`
-}
+type CreatePreviewRequest = capydbclient.CreatePreviewRequest
 
 // APIKey is org API key metadata. The plaintext secret is only ever returned
 // at creation time.
-type APIKey struct {
-	ID             string   `json:"id"`
-	OrganizationID string   `json:"organization_id"`
-	ProjectID      string   `json:"project_id,omitempty"`
-	Name           string   `json:"name"`
-	KeyPrefix      string   `json:"key_prefix"`
-	Scopes         []string `json:"scopes"`
-	Source         string   `json:"source"`
-	IsActive       bool     `json:"is_active"`
-	CreatedAt      string   `json:"created_at"`
-	RevokedAt      string   `json:"revoked_at,omitempty"`
-}
+type APIKey = capydbclient.APIKey
 
 // CreateAPIKeyRequest creates an org-wide or project-scoped API key.
-type CreateAPIKeyRequest struct {
-	Name      string   `json:"name"`
-	Scopes    []string `json:"scopes"`
-	ProjectID string   `json:"project_id,omitempty"`
-}
+type CreateAPIKeyRequest = capydbclient.CreateAPIKeyRequest
 
 // CreatedAPIKey pairs key metadata with the plaintext secret returned exactly
 // once at creation time.
@@ -218,24 +169,11 @@ type CreatedAPIKey struct {
 }
 
 // WebhookEndpoint is an outbound webhook receiver registration.
-type WebhookEndpoint struct {
-	ID             string   `json:"id"`
-	OrganizationID string   `json:"organization_id"`
-	URL            string   `json:"url"`
-	Description    string   `json:"description,omitempty"`
-	EventTypes     []string `json:"event_types"`
-	IsActive       bool     `json:"is_active"`
-	CreatedAt      string   `json:"created_at"`
-	UpdatedAt      string   `json:"updated_at"`
-}
+type WebhookEndpoint = capydbclient.WebhookEndpoint
 
 // CreateWebhookEndpointRequest registers a webhook endpoint. Empty EventTypes
 // subscribes to all events.
-type CreateWebhookEndpointRequest struct {
-	URL         string   `json:"url"`
-	Description string   `json:"description,omitempty"`
-	EventTypes  []string `json:"event_types,omitempty"`
-}
+type CreateWebhookEndpointRequest = capydbclient.CreateWebhookEndpointRequest
 
 // UpdateWebhookEndpointRequest updates a webhook endpoint. Nil fields are
 // left unchanged.
@@ -259,19 +197,11 @@ type Region struct {
 }
 
 // Organization is the org record exposed to its members.
-type Organization struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	Slug          string `json:"slug"`
-	BillingPlan   string `json:"billing_plan"`
-	BillingStatus string `json:"billing_status"`
-}
+type Organization = capydbclient.Organization
 
 // Viewer is the authenticated principal plus its organization (nil when the
 // principal is not org-bound, e.g. the platform admin token).
-type Viewer struct {
-	Organization *Organization `json:"organization"`
-}
+type Viewer = capydbclient.Viewer
 
 // GetViewer returns the authenticated principal's organization.
 func (c *Client) GetViewer(ctx context.Context) (Viewer, error) {
@@ -349,7 +279,9 @@ func (c *Client) DeleteProject(ctx context.Context, projectID string) (Job, erro
 	var response struct {
 		Job Job `json:"job"`
 	}
-	if err := c.do(ctx, http.MethodDelete, "/v1/projects/"+url.PathEscape(projectID), nil, &response); err != nil {
+	// confirm=true always: terraform's own plan/apply approval is the
+	// destructive-action confirmation for production projects.
+	if err := c.do(ctx, http.MethodDelete, "/v1/projects/"+url.PathEscape(projectID)+"?confirm=true", nil, &response); err != nil {
 		return Job{}, err
 	}
 	return response.Job, nil

@@ -19,9 +19,9 @@ variable.
 
 Operations the provider performs require these scopes on the key:
 
-- `projects:read` / `projects:write` — projects and preview databases
-- `credentials:read` — the `capydb_project_connection` data source
-- `jobs:read` — waiting on asynchronous provision/delete jobs
+- `projects:read` / `projects:write` - projects and preview databases
+- `credentials:read` - the `capydb_project_connection` data source
+- `jobs:read` - waiting on asynchronous provision/delete jobs
 
 ## Example Usage
 
@@ -74,7 +74,7 @@ resource "capydb_project" "app" {
 ```
 
 If a create wait times out or the job fails, the resource is still recorded in state with its id,
-so the project/preview is never orphaned — re-run `terraform apply` or inspect the job in the
+so the project/preview is never orphaned - re-run `terraform apply` or inspect the job in the
 dashboard.
 
 ## Empty lists

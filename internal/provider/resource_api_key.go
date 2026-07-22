@@ -47,7 +47,7 @@ func (r *apiKeyResource) Metadata(_ context.Context, req resource.MetadataReques
 func (r *apiKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
 		Description: "A CapyDB organization API key. The plaintext key is returned by the API exactly once at " +
-			"creation and is stored in Terraform state as the sensitive `token` attribute — the API never returns " +
+			"creation and is stored in Terraform state as the sensitive `token` attribute - the API never returns " +
 			"it again, so drift on the secret itself cannot be detected (only metadata such as revocation is). " +
 			"All configurable attributes force a replacement; deleting the resource revokes the key.",
 		Attributes: map[string]schema.Attribute{
@@ -195,7 +195,7 @@ func (r *apiKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 		return
 	}
 
-	// A revoked key is gone for all practical purposes — drop it from state
+	// A revoked key is gone for all practical purposes - drop it from state
 	// so Terraform plans a recreation.
 	if !key.IsActive {
 		resp.State.RemoveResource(ctx)

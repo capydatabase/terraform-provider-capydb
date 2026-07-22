@@ -153,7 +153,7 @@ func TestProjectResourceCRUD(t *testing.T) {
 	// Create.
 	planRaw := objectValue(t, schemaType, map[string]tftypes.Value{
 		"name":        str("my app"),
-		"environment": str("nonproduction"),
+		"environment": str("non_production"),
 	})
 	createResp := resource.CreateResponse{State: emptyResourceState(t, s)}
 	r.Create(ctx, resource.CreateRequest{
@@ -166,7 +166,7 @@ func TestProjectResourceCRUD(t *testing.T) {
 	if projectID == "" {
 		t.Fatal("project id not set after create")
 	}
-	if got := stateString(t, createResp.State, "environment"); got != "nonproduction" {
+	if got := stateString(t, createResp.State, "environment"); got != "non_production" {
 		t.Errorf("environment = %q", got)
 	}
 	if got := stateString(t, createResp.State, "plan"); got != "launch" {

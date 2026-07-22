@@ -12,7 +12,7 @@ sensitive `signing_secret` attribute; drift on the secret itself cannot be detec
 
 To rotate the secret, bump `secret_version` (e.g. `1` → `2`). The endpoint is updated in place and
 the new secret is stored in state; the previous secret stops validating immediately. The
-`secret_version` value itself is never sent to the API — it is purely a rotation trigger.
+`secret_version` value itself is never sent to the API - it is purely a rotation trigger.
 
 ## Example Usage
 

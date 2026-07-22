@@ -7,7 +7,7 @@ description: |-
 # capydb_api_key (Resource)
 
 A CapyDB organization API key. The plaintext key is returned by the API exactly once at creation
-and is stored in Terraform state as the sensitive `token` attribute — the API never returns it
+and is stored in Terraform state as the sensitive `token` attribute - the API never returns it
 again, so drift on the secret itself cannot be detected (only metadata such as revocation is).
 
 All configurable attributes force a replacement; deleting the resource revokes the key. A key that

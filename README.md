@@ -1,6 +1,6 @@
 # Terraform Provider for CapyDB
 
-The official Terraform/OpenTofu provider for [CapyDB](https://capydb.dev) — simple managed Postgres
+The official Terraform/OpenTofu provider for [CapyDB](https://capydb.dev) - simple managed Postgres
 hosting. Manage projects (logical Postgres databases), disposable preview/branch databases,
 organization API keys, and webhook endpoints as code.
 
@@ -26,7 +26,7 @@ terraform {
 
 Build the provider and point Terraform at the binary with a
 [`dev_overrides`](https://developer.hashicorp.com/terraform/cli/config/config-file#development-overrides-for-provider-developers)
-block — no registry, version pin, or `terraform init` needed for the overridden provider:
+block - no registry, version pin, or `terraform init` needed for the overridden provider:
 
 ```bash
 make install   # go install -> $GOPATH/bin/terraform-provider-capydb
@@ -43,7 +43,7 @@ provider_installation {
 }
 ```
 
-Then run `terraform plan` / `apply` directly (skip `terraform init` for the overridden provider —
+Then run `terraform plan` / `apply` directly (skip `terraform init` for the overridden provider -
 Terraform prints a warning that dev overrides are in effect).
 
 ## Provider configuration
@@ -125,7 +125,7 @@ resource "capydb_project" "app" {
 ```
 
 On create, the resource id is written to state *before* waiting, so a timed-out or failed job
-never orphans the project/preview — re-run `terraform apply` or inspect the job in the dashboard.
+never orphans the project/preview - re-run `terraform apply` or inspect the job in the dashboard.
 
 ## Null lists
 
@@ -150,7 +150,7 @@ make release-snapshot  # local GoReleaser snapshot
 ```
 
 The test suite runs the provider's CRUD logic against an in-memory mock of the CapyDB control
-plane (`internal/provider/mock_server_test.go`) — no real infrastructure needed.
+plane (`internal/provider/mock_server_test.go`) - no real infrastructure needed.
 
 Releases are published with GoReleaser following the
 [Terraform Registry publishing layout](https://developer.hashicorp.com/terraform/registry/providers/publishing):

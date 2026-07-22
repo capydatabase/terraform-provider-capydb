@@ -43,6 +43,7 @@ type projectModel struct {
 	Name              types.String   `tfsdk:"name"`
 	Region            types.String   `tfsdk:"region"`
 	Environment       types.String   `tfsdk:"environment"`
+	PostgresVersion   types.String   `tfsdk:"postgres_version"`
 	Slug              types.String   `tfsdk:"slug"`
 	Plan              types.String   `tfsdk:"plan"`
 	PrimaryInstanceID types.String   `tfsdk:"primary_instance_id"`
@@ -57,6 +58,11 @@ func (m *projectModel) fill(project capydb.Project) {
 	m.Name = types.StringValue(project.Name)
 	m.Region = types.StringValue(project.Region)
 	m.Environment = types.StringValue(project.Environment)
+	// Empty while the database is still provisioning; the post-provision read
+	// fills the real major so the attribute is stable in state.
+	if project.PostgresVersion != "" {
+		m.PostgresVersion = types.StringValue(project.PostgresVersion)
+	}
 	m.Slug = types.StringValue(project.Slug)
 	m.Plan = types.StringValue(project.Plan)
 	m.PrimaryInstanceID = types.StringValue(project.PrimaryInstanceID)
@@ -102,9 +108,22 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 			"environment": schema.StringAttribute{
 				Optional:    true,
 				Computed:    true,
-				Description: "Environment label, either `production` or `nonproduction`. Updatable in place.",
+				Description: "Environment label, either `production` or `non_production`. Updatable in place.",
 				Validators: []validator.String{
-					stringvalidator.OneOf("production", "nonproduction"),
+					stringvalidator.OneOf("production", "non_production"),
+				},
+			},
+			"postgres_version": schema.StringAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "Postgres major version for the database (`16`, `17`, or `18`). Omit for the " +
+					"platform default. Changing it forces a replacement.",
+				Validators: []validator.String{
+					stringvalidator.OneOf("16", "17", "18"),
+				},
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
 			"slug": schema.StringAttribute{
@@ -116,12 +135,12 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 			},
 			"plan": schema.StringAttribute{
 				Computed: true,
-				Description: "Project plan (e.g. `free`, `launch`, `scale`). Derived from the organization's " +
+				Description: "Project plan (e.g. `vibe`, `ship`, `business`). Derived from the organization's " +
 					"billing state; never configurable.",
 			},
 			"primary_instance_id": schema.StringAttribute{
 				Computed:    true,
-				Description: "Primary instance the project lives on.",
+				Description: "Identifier of the database cell the project runs in.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
@@ -169,9 +188,10 @@ func (r *projectResource) Create(ctx context.Context, req resource.CreateRequest
 	}
 
 	request := capydb.CreateProjectRequest{
-		Name:        plan.Name.ValueString(),
-		Region:      plan.Region.ValueString(),
-		Environment: plan.Environment.ValueString(),
+		Name:            plan.Name.ValueString(),
+		Region:          plan.Region.ValueString(),
+		Environment:     plan.Environment.ValueString(),
+		PostgresVersion: plan.PostgresVersion.ValueString(),
 	}
 
 	project, job, err := r.client.CreateProject(ctx, request)

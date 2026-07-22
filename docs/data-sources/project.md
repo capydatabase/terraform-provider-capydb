@@ -30,7 +30,7 @@ data "capydb_project" "by_id" {
 ### Read-Only
 
 - `name` (String) Project name.
-- `primary_instance_id` (String) Primary instance the project lives on.
+- `primary_instance_id` (String) Identifier of the database cell the project runs in.
 - `environment` (String) Environment label.
 - `plan` (String) Billing-derived project plan.
 - `region` (String) Region the project lives in.

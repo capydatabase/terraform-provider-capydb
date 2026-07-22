@@ -1,9 +1,9 @@
 module github.com/capy-base/terraform-provider-capydb
 
-go 1.26.4
+go 1.26.5
 
 require (
-	github.com/capy-base/capydb/capydbclient v0.1.0
+	github.com/capy-base/capydbclient v1.1.0
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.7.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0

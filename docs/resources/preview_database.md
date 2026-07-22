@@ -37,7 +37,7 @@ resource "capydb_preview_database" "pr" {
 ### Required
 
 - `project_id` (String) Project the preview belongs to. Changing it forces a replacement.
-- `ttl_hours` (Number) Time to live in hours (minimum 1), counted from when it is set. Updating it
+- `ttl_hours` (Number) Time to live in hours (1-168), counted from when it is set. Updating it
   resets the preview's expiry in place to `ttl_hours` from the time of the update.
 
 ### Optional
