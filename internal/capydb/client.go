@@ -128,28 +128,13 @@ type CreateProjectRequest = capydbclient.CreateProjectRequest
 
 // UpdateProjectRequest updates mutable project metadata. Only the environment
 // label is mutable; nil leaves it unchanged.
-type UpdateProjectRequest struct {
-	Environment *string `json:"environment,omitempty"`
-}
+type UpdateProjectRequest = capydbclient.UpdateProjectRequest
 
 // ConnectionInfo carries the credential-embedded connection URLs.
 type ConnectionInfo = capydbclient.ConnectionInfo
 
 // PreviewDatabase is a disposable preview/branch database.
-type PreviewDatabase struct {
-	ID           string    `json:"id"`
-	ProjectID    string    `json:"project_id"`
-	Name         string    `json:"name"`
-	Mode         string    `json:"mode"`
-	State        string    `json:"state"`
-	DatabaseName string    `json:"database_name"`
-	RoleName     string    `json:"role_name"`
-	PublicHost   string    `json:"public_host,omitempty"`
-	LastError    string    `json:"last_error,omitempty"`
-	TTLExpiresAt time.Time `json:"ttl_expires_at"`
-	CreatedAt    time.Time `json:"created_at"`
-	UpdatedAt    time.Time `json:"updated_at"`
-}
+type PreviewDatabase = capydbclient.PreviewDatabase
 
 // CreatePreviewRequest creates a preview database.
 type CreatePreviewRequest = capydbclient.CreatePreviewRequest
@@ -177,12 +162,7 @@ type CreateWebhookEndpointRequest = capydbclient.CreateWebhookEndpointRequest
 
 // UpdateWebhookEndpointRequest updates a webhook endpoint. Nil fields are
 // left unchanged.
-type UpdateWebhookEndpointRequest struct {
-	URL         *string   `json:"url,omitempty"`
-	Description *string   `json:"description,omitempty"`
-	EventTypes  *[]string `json:"event_types,omitempty"`
-	IsActive    *bool     `json:"is_active,omitempty"`
-}
+type UpdateWebhookEndpointRequest = capydbclient.UpdateWebhookEndpointRequest
 
 // CreatedWebhookEndpoint pairs an endpoint with the plaintext signing secret
 // returned exactly once (at creation or rotation).
