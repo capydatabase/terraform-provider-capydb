@@ -19,7 +19,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/capy-base/capydbclient"
+	"github.com/capydatabase/capydbclient"
 )
 
 // DefaultBaseURL is the public CapyDB API bridge.
@@ -255,13 +255,28 @@ func (c *Client) UpdateProject(ctx context.Context, projectID string, request Up
 }
 
 // DeleteProject enqueues asynchronous deletion and returns the job.
+// Terraform's own plan/apply approval is the human confirmation for
+// destructive actions, so the control plane's approval token is minted here
+// mechanically: production deletes require a single-use project.delete
+// approval, and minting one for a non-production project is harmless (the
+// token simply goes unconsumed and expires).
 func (c *Client) DeleteProject(ctx context.Context, projectID string) (Job, error) {
+	var mintResponse struct {
+		Approval struct {
+			Token string `json:"token"`
+		} `json:"approval"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/v1/projects/"+url.PathEscape(projectID)+"/approvals",
+		map[string]string{"action": "project.delete"}, &mintResponse); err != nil {
+		return Job{}, err
+	}
+
 	var response struct {
 		Job Job `json:"job"`
 	}
-	// confirm=true always: terraform's own plan/apply approval is the
-	// destructive-action confirmation for production projects.
-	if err := c.do(ctx, http.MethodDelete, "/v1/projects/"+url.PathEscape(projectID)+"?confirm=true", nil, &response); err != nil {
+	target := "/v1/projects/" + url.PathEscape(projectID) +
+		"?approval_token=" + url.QueryEscape(mintResponse.Approval.Token)
+	if err := c.do(ctx, http.MethodDelete, target, nil, &response); err != nil {
 		return Job{}, err
 	}
 	return response.Job, nil

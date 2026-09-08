@@ -10,7 +10,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/capy-base/terraform-provider-capydb/internal/capydb"
+	"github.com/capydatabase/terraform-provider-capydb/internal/capydb"
 )
 
 // mockControlPlane is a stateful in-memory CapyDB control plane for resource
@@ -195,6 +195,21 @@ func (m *mockControlPlane) handler() http.Handler {
 			m.patchedEnvs = append(m.patchedEnvs, *request.Environment)
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"project": project})
+	})
+
+	mux.HandleFunc("POST /v1/projects/{projectID}/approvals", func(w http.ResponseWriter, r *http.Request) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if _, ok := m.projects[r.PathValue("projectID")]; !ok {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "project not found"})
+			return
+		}
+		writeJSON(w, http.StatusCreated, map[string]any{"approval": map[string]any{
+			"id":         "apr_mock",
+			"action":     "project.delete",
+			"expires_at": "2026-01-01T00:10:00Z",
+			"token":      "ap_mock_token",
+		}})
 	})
 
 	mux.HandleFunc("DELETE /v1/projects/{projectID}", func(w http.ResponseWriter, r *http.Request) {

@@ -10,7 +10,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/types"
 
-	"github.com/capy-base/terraform-provider-capydb/internal/capydb"
+	"github.com/capydatabase/terraform-provider-capydb/internal/capydb"
 )
 
 var (

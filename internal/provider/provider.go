@@ -15,7 +15,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-log/tflog"
 
-	"github.com/capy-base/terraform-provider-capydb/internal/capydb"
+	"github.com/capydatabase/terraform-provider-capydb/internal/capydb"
 )
 
 // Environment variable fallbacks for the provider configuration.

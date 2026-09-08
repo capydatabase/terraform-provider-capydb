@@ -29,7 +29,7 @@ Operations the provider performs require these scopes on the key:
 terraform {
   required_providers {
     capydb = {
-      source  = "capy-base/capydb"
+      source  = "capydatabase/capydb"
       version = "~> 0.1"
     }
   }

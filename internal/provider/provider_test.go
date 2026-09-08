@@ -14,7 +14,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
-	"github.com/capy-base/terraform-provider-capydb/internal/capydb"
+	"github.com/capydatabase/terraform-provider-capydb/internal/capydb"
 )
 
 // --- framework plumbing helpers -------------------------------------------

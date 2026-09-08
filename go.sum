@@ -1,7 +1,7 @@
 github.com/bufbuild/protocompile v0.14.1 h1:iA73zAf/fyljNjQKwYzUHD6AD4R8KMasmwa/FBatYVw=
 github.com/bufbuild/protocompile v0.14.1/go.mod h1:ppVdAIhbr2H8asPk6k4pY7t9zB1OU5DoEw9xY/FUi1c=
-github.com/capy-base/capydbclient v1.8.0 h1:Z3ZrQrF/Dcf5Su8rbnDT3xOqLLlkR67GFSyPY/Vp3nA=
-github.com/capy-base/capydbclient v1.8.0/go.mod h1:6E6IK1Ey1BT2l/Zl5D0K4gXN2ParvLWWJ/rX+jD5oos=
+github.com/capydatabase/capydbclient v1.9.0 h1:ayDqwYjTMZ81H0YJOS6MnZ9c0nfpcRI8DdQzPkunyJE=
+github.com/capydatabase/capydbclient v1.9.0/go.mod h1:pWQ8giRXl5CKpYzZ8QN63AuTYY4rimg087RrL8nqy18=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=

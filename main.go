@@ -9,7 +9,7 @@ import (
 
 	"github.com/hashicorp/terraform-plugin-framework/providerserver"
 
-	"github.com/capy-base/terraform-provider-capydb/internal/provider"
+	"github.com/capydatabase/terraform-provider-capydb/internal/provider"
 )
 
 // version is set by GoReleaser at build time via ldflags.
@@ -21,7 +21,7 @@ func main() {
 	flag.Parse()
 
 	err := providerserver.Serve(context.Background(), provider.New(version), providerserver.ServeOpts{
-		Address: "registry.terraform.io/capy-base/capydb",
+		Address: "registry.terraform.io/capydatabase/capydb",
 		Debug:   debug,
 	})
 	if err != nil {

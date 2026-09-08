@@ -1,7 +1,7 @@
 terraform {
   required_providers {
     capydb = {
-      source  = "capy-base/capydb"
+      source  = "capydatabase/capydb"
       version = "~> 0.1"
     }
   }

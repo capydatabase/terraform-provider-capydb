@@ -15,7 +15,7 @@ Built on [terraform-plugin-framework](https://github.com/hashicorp/terraform-plu
 terraform {
   required_providers {
     capydb = {
-      source  = "capy-base/capydb"
+      source  = "capydatabase/capydb"
       version = "~> 0.1"
     }
   }
@@ -37,7 +37,7 @@ make install   # go install -> $GOPATH/bin/terraform-provider-capydb
 ```hcl
 provider_installation {
   dev_overrides {
-    "capy-base/capydb" = "/Users/you/go/bin"   # directory containing the binary
+    "capydatabase/capydb" = "/Users/you/go/bin"   # directory containing the binary
   }
   direct {}
 }
