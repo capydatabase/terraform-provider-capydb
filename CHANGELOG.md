@@ -19,7 +19,14 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   omitted (`direct_port`, `pooled_port`, `ssl_mode`, and the `source_*` provenance fields).
   Tracks `capydbclient` v1.6.0.
 - Go directive raised to 1.27.1.
-- `capydbclient` bumped to v1.9.0 (approval tokens and read-only SQL).
+- `capydbclient` bumped to v1.10.0 (approval tokens, read-only SQL, and the import preflight's
+  source-provider and replication-readiness fields). This entry previously claimed v1.9.0 while
+  `go.mod` still required v1.8.0 - a tag published before the GitHub organisation rename, whose
+  `go.mod` still declares the `capy-base` module path. Any build resolving it failed with "module
+  declares its path as github.com/capy-base/capydbclient", and because the local Go workspace unions
+  every module's graph, that one stale requirement broke `go build` in the backend and the CLI too.
+  Pre-rename tags cannot be repaired; the fix is to require a version tagged after the rename
+  (capydbclient v1.9.0 or later).
 
 ## [2026-08-18]
 
