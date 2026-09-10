@@ -6,6 +6,22 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Added
+
+- **`capydb_kv_store`** - a project's K/V store (CapyDB Knight/Valkyrie: key-value and rate
+  limiting), running in its own KV cell beside the database rather than inside it. `project_id` is
+  the only configurable attribute and forces a replacement; the store is sized from the
+  organization's plan, so there is nothing to tune. Computed attributes cover `state`,
+  `maxmemory_mb` (the storable capacity, not the cell's larger memory ceiling), `maxmemory_policy`,
+  `persistence`, `rest_url`, and the sensitive `rest_token` and `redis_url`.
+
+  The plaintext token is captured at create because that is the only response carrying it - the
+  control plane keeps its SHA-256 hash - so `Read` deliberately does **not** refresh it from the
+  credentials endpoint, which would overwrite the only copy in state with an empty string. Import
+  takes the **project** id (every K/V endpoint is addressed by project) and leaves `rest_token`
+  empty, because it cannot be recovered. Rotation is not exposed: the response that carries a new
+  secret is the only place it exists, which is not a shape Terraform's refresh model can hold.
+
 ### Changed
 
 - Project deletion completes the control plane's new approve-then-execute flow: the client mints
@@ -22,8 +38,8 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 - `capydbclient` bumped to v1.10.0 (approval tokens, read-only SQL, and the import preflight's
   source-provider and replication-readiness fields). This entry previously claimed v1.9.0 while
   `go.mod` still required v1.8.0 - a tag published before the GitHub organisation rename, whose
-  `go.mod` still declares the `capy-base` module path. Any build resolving it failed with "module
-  declares its path as github.com/capy-base/capydbclient", and because the local Go workspace unions
+  `go.mod` still declares the `capydatabase` module path. Any build resolving it failed with "module
+  declares its path as github.com/capydatabase/capydbclient", and because the local Go workspace unions
   every module's graph, that one stale requirement broke `go build` in the backend and the CLI too.
   Pre-rename tags cannot be repaired; the fix is to require a version tagged after the rename
   (capydbclient v1.9.0 or later).

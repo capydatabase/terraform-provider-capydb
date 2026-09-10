@@ -23,6 +23,7 @@ type mockControlPlane struct {
 	projects  map[string]*capydb.Project
 	previews  map[string]*capydb.PreviewDatabase
 	apiKeys   map[string]*capydb.APIKey
+	kvStores  map[string]*capydb.KVStore // keyed by project id: a project has at most one
 	webhooks  map[string]*capydb.WebhookEndpoint
 	jobPolls  map[string]int
 	jobStates map[string]string
@@ -39,6 +40,7 @@ func newMockControlPlane() *mockControlPlane {
 		projects:  map[string]*capydb.Project{},
 		previews:  map[string]*capydb.PreviewDatabase{},
 		apiKeys:   map[string]*capydb.APIKey{},
+		kvStores:  map[string]*capydb.KVStore{},
 		webhooks:  map[string]*capydb.WebhookEndpoint{},
 		jobPolls:  map[string]int{},
 		jobStates: map[string]string{},
@@ -314,6 +316,86 @@ func (m *mockControlPlane) handler() http.Handler {
 		// (the mock's fixed clock), not a delta on the current expiry.
 		preview.TTLExpiresAt = time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC).Add(time.Duration(hours) * time.Hour)
 		writeJSON(w, http.StatusOK, map[string]any{"preview": preview})
+	})
+
+	mux.HandleFunc("POST /v1/projects/{projectID}/kv", func(w http.ResponseWriter, r *http.Request) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		projectID := r.PathValue("projectID")
+		if _, exists := m.kvStores[projectID]; exists {
+			writeJSON(w, http.StatusConflict, map[string]string{"error": "this project already has a K/V store"})
+			return
+		}
+		store := &capydb.KVStore{
+			ID:              m.id("kv"),
+			ProjectID:       projectID,
+			OrganizationID:  "org_1",
+			State:           "provisioning",
+			MaxMemoryMB:     128,
+			MemMaxMB:        256,
+			MaxMemoryPolicy: "volatile-lru",
+			Persistence:     "rdb",
+			PublicHost:      "kv-app.db.capydb.dev",
+			CreatedAt:       time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC),
+		}
+		m.kvStores[projectID] = store
+		// Create is the only response that carries the plaintext token.
+		response := *store
+		response.Token = "capy_kv_secret"
+		response.TokenPrefix = "capy_kv_se"
+		response.Credentials = capydb.KVCredentials{
+			RestURL:   "https://kv-app.db.capydb.dev",
+			RestToken: "capy_kv_secret",
+			RedisURL:  "rediss://default:capy_kv_secret@kv-app.db.capydb.dev:6379",
+			RedisHost: "kv-app.db.capydb.dev",
+			RedisPort: 6379,
+		}
+		writeJSON(w, http.StatusAccepted, map[string]any{
+			"job":      capydb.Job{ID: m.id("job"), State: "pending", Type: "kv.create"},
+			"kv_store": response,
+		})
+	})
+
+	mux.HandleFunc("GET /v1/projects/{projectID}/kv", func(w http.ResponseWriter, r *http.Request) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		store, ok := m.kvStores[r.PathValue("projectID")]
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "kv store not found"})
+			return
+		}
+		writeJSON(w, http.StatusOK, store)
+	})
+
+	mux.HandleFunc("DELETE /v1/projects/{projectID}/kv", func(w http.ResponseWriter, r *http.Request) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		projectID := r.PathValue("projectID")
+		if _, ok := m.kvStores[projectID]; !ok {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "kv store not found"})
+			return
+		}
+		delete(m.kvStores, projectID)
+		writeJSON(w, http.StatusAccepted, map[string]any{
+			"job": capydb.Job{ID: m.id("job"), State: "pending", Type: "kv.destroy"},
+		})
+	})
+
+	// The read path never returns the secret: only the token's hash is stored.
+	mux.HandleFunc("GET /v1/projects/{projectID}/kv/credentials", func(w http.ResponseWriter, r *http.Request) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		if _, ok := m.kvStores[r.PathValue("projectID")]; !ok {
+			writeJSON(w, http.StatusNotFound, map[string]string{"error": "kv store not found"})
+			return
+		}
+		writeJSON(w, http.StatusOK, capydb.KVCredentials{
+			RestURL:       "https://kv-app.db.capydb.dev",
+			RedisURL:      "rediss://kv-app.db.capydb.dev:6379",
+			RedisHost:     "kv-app.db.capydb.dev",
+			RedisPort:     6379,
+			TokenRequired: true,
+		})
 	})
 
 	mux.HandleFunc("POST /v1/organizations/{orgID}/api-keys", func(w http.ResponseWriter, r *http.Request) {

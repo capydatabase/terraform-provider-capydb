@@ -138,6 +138,7 @@ func (p *capydbProvider) Resources(_ context.Context) []func() resource.Resource
 		NewProjectResource,
 		NewPreviewDatabaseResource,
 		NewAPIKeyResource,
+		NewKVStoreResource,
 		NewWebhookEndpointResource,
 	}
 }

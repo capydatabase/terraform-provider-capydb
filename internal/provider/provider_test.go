@@ -650,10 +650,89 @@ func TestProviderMetadataAndSchema(t *testing.T) {
 	if _, ok := schemaResp.Schema.Attributes["api_key"]; !ok {
 		t.Error("api_key attribute missing")
 	}
-	if len(p.Resources(ctx)) != 4 {
-		t.Errorf("resources = %d, want 4", len(p.Resources(ctx)))
+	if len(p.Resources(ctx)) != 5 {
+		t.Errorf("resources = %d, want 5", len(p.Resources(ctx)))
 	}
 	if len(p.DataSources(ctx)) != 4 {
 		t.Errorf("data sources = %d, want 4", len(p.DataSources(ctx)))
+	}
+}
+
+func TestKVStoreResourceCRUD(t *testing.T) {
+	ctx := context.Background()
+	client, mock := newTestClient(t)
+
+	r := NewKVStoreResource()
+	configureResource(t, r, client)
+	s := resourceSchema(t, r)
+	schemaType := s.Type().TerraformType(ctx)
+
+	planRaw := objectValue(t, schemaType, map[string]tftypes.Value{
+		"project_id": str("project_1"),
+	})
+	createResp := resource.CreateResponse{State: emptyResourceState(t, s)}
+	r.Create(ctx, resource.CreateRequest{
+		Plan:   tfsdk.Plan{Schema: s, Raw: planRaw},
+		Config: tfsdk.Config{Schema: s, Raw: planRaw},
+	}, &createResp)
+	requireNoDiags(t, "create", createResp.Diagnostics)
+
+	if got := stateString(t, createResp.State, "id"); got == "" {
+		t.Fatal("kv store id not set after create")
+	}
+	// The create response is the only one that carries the plaintext token, so
+	// failing to capture it here would leave an unusable store in state.
+	if got := stateString(t, createResp.State, "rest_token"); got != "capy_kv_secret" {
+		t.Errorf("rest_token = %q (the plaintext must be captured at create)", got)
+	}
+	if got := stateString(t, createResp.State, "rest_url"); got != "https://kv-app.db.capydb.dev" {
+		t.Errorf("rest_url = %q", got)
+	}
+	// Published capacity is the storable maxmemory, never the cell's ceiling.
+	if got := stateInt(t, createResp.State, "maxmemory_mb"); got != 128 {
+		t.Errorf("maxmemory_mb = %d, want the storable 128 (not the 256 MB cell ceiling)", got)
+	}
+	if got := stateString(t, createResp.State, "maxmemory_policy"); got != "volatile-lru" {
+		t.Errorf("maxmemory_policy = %q", got)
+	}
+
+	// Read must not overwrite the token: the credentials endpoint never returns
+	// it, so refreshing from there would destroy the only copy in state.
+	readResp := resource.ReadResponse{State: createResp.State}
+	r.Read(ctx, resource.ReadRequest{State: createResp.State}, &readResp)
+	requireNoDiags(t, "read", readResp.Diagnostics)
+	if got := stateString(t, readResp.State, "rest_token"); got != "capy_kv_secret" {
+		t.Errorf("rest_token after read = %q, want preserved capy_kv_secret", got)
+	}
+	if got := stateString(t, readResp.State, "state"); got != "provisioning" {
+		t.Errorf("state = %q", got)
+	}
+
+	// A second store on the same project is a conflict, not a silent no-op.
+	conflictResp := resource.CreateResponse{State: emptyResourceState(t, s)}
+	r.Create(ctx, resource.CreateRequest{
+		Plan:   tfsdk.Plan{Schema: s, Raw: planRaw},
+		Config: tfsdk.Config{Schema: s, Raw: planRaw},
+	}, &conflictResp)
+	if !conflictResp.Diagnostics.HasError() {
+		t.Error("creating a second K/V store on one project should fail")
+	}
+
+	deleteResp := resource.DeleteResponse{State: readResp.State}
+	r.Delete(ctx, resource.DeleteRequest{State: readResp.State}, &deleteResp)
+	requireNoDiags(t, "delete", deleteResp.Diagnostics)
+	mock.mu.Lock()
+	_, stillThere := mock.kvStores["project_1"]
+	mock.mu.Unlock()
+	if stillThere {
+		t.Error("kv store should be gone after delete")
+	}
+
+	// A store deleted outside Terraform drops out of state rather than erroring.
+	goneResp := resource.ReadResponse{State: readResp.State}
+	r.Read(ctx, resource.ReadRequest{State: readResp.State}, &goneResp)
+	requireNoDiags(t, "read after delete", goneResp.Diagnostics)
+	if !goneResp.State.Raw.IsNull() {
+		t.Error("read should remove a K/V store that no longer exists")
 	}
 }

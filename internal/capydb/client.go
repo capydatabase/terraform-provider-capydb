@@ -101,6 +101,10 @@ func NewClient(baseURL, apiKey, version string, opts ...Option) (*Client, error)
 // OpenAPI spec) rather than being re-declared here.
 type Job = capydbclient.Job
 
+type KVCredentials = capydbclient.KVCredentials
+
+type KVStore = capydbclient.KVStore
+
 // Terminal job states.
 const (
 	JobStateCompleted = "completed"
@@ -547,4 +551,50 @@ func (c *Client) WaitForJob(ctx context.Context, jobID string) (Job, error) {
 // backoff; non-GET requests are never retried.
 func (c *Client) do(ctx context.Context, method, path string, payload any, dest any) error {
 	return c.doer.Do(ctx, method, path, payload, dest)
+}
+
+// ── K/V stores ───────────────────────────────────────────────────────────────
+
+// GetKVStore returns the project's K/V store. A 404 means the project has no
+// store, which callers distinguish with IsNotFound.
+func (c *Client) GetKVStore(ctx context.Context, projectID string) (KVStore, error) {
+	var store KVStore
+	if err := c.do(ctx, http.MethodGet, "/v1/projects/"+url.PathEscape(projectID)+"/kv", nil, &store); err != nil {
+		return KVStore{}, err
+	}
+	return store, nil
+}
+
+// CreateKVStore provisions the project's store. The response carries the
+// plaintext token exactly once - only its hash is stored - so the caller must
+// persist it here or lose it.
+func (c *Client) CreateKVStore(ctx context.Context, projectID string) (KVStore, Job, error) {
+	var response struct {
+		Job     Job     `json:"job"`
+		KVStore KVStore `json:"kv_store"`
+	}
+	if err := c.do(ctx, http.MethodPost, "/v1/projects/"+url.PathEscape(projectID)+"/kv", map[string]any{}, &response); err != nil {
+		return KVStore{}, Job{}, err
+	}
+	return response.KVStore, response.Job, nil
+}
+
+func (c *Client) DeleteKVStore(ctx context.Context, projectID string) (Job, error) {
+	var response struct {
+		Job Job `json:"job"`
+	}
+	if err := c.do(ctx, http.MethodDelete, "/v1/projects/"+url.PathEscape(projectID)+"/kv", nil, &response); err != nil {
+		return Job{}, err
+	}
+	return response.Job, nil
+}
+
+// GetKVCredentials returns the endpoints without the secret: the token cannot
+// be read back, so RestToken is empty and TokenRequired is true.
+func (c *Client) GetKVCredentials(ctx context.Context, projectID string) (KVCredentials, error) {
+	var credentials KVCredentials
+	if err := c.do(ctx, http.MethodGet, "/v1/projects/"+url.PathEscape(projectID)+"/kv/credentials", nil, &credentials); err != nil {
+		return KVCredentials{}, err
+	}
+	return credentials, nil
 }
