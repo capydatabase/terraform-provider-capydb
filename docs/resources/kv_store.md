@@ -85,8 +85,9 @@ destroys the store and its data.
   a TTL are evictable, so a store filled with non-expiring keys rejects writes rather than
   discarding data.
 - `persistence` (String) Durability mode, managed by CapyDB. `rdb` is a periodic snapshot.
-- `rest_url` (String) Upstash-compatible REST endpoint. Set it as `CAPYDB_KV_REST_URL`.
+- `rest_url` (String) Upstash-compatible REST endpoint. Set it as `CAPYKV_REST_URL`.
 - `rest_token` (String, Sensitive) The plaintext K/V token (format `capy_kv_...`). Returned exactly
-  once at creation; set it as `CAPYDB_KV_REST_TOKEN`. Empty on an imported resource.
-- `redis_url` (String, Sensitive) RESP endpoint for ordinary Redis® OSS clients. Carries the token
-  as its password at creation; after an import it has no password.
+  once at creation; set it as `CAPYKV_REST_TOKEN`. Empty on an imported resource.
+- `redis_url` (String, Sensitive) RESP endpoint for ordinary Redis® OSS clients. Set it as
+  `CAPYKV_REDIS_URL`. Carries the token as its password at creation; after an import it has no
+  password.

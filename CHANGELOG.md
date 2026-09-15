@@ -24,6 +24,8 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Changed
 
+- `capydb_kv_store.redis_url` documents its published environment name, `CAPYKV_REDIS_URL`.
+
 - Project deletion completes the control plane's new approve-then-execute flow: the client mints
   a single-use `project.delete` approval token and presents it to the delete, replacing the old
   `confirm=true` query flag. Terraform's own plan/apply approval remains the human gate; no

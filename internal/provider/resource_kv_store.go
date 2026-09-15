@@ -92,13 +92,13 @@ func (r *kvStoreResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"rest_url": schema.StringAttribute{
 				Computed:    true,
-				Description: "Upstash-compatible REST endpoint. Set it as `CAPYDB_KV_REST_URL`.",
+				Description: "Upstash-compatible REST endpoint. Set it as `CAPYKV_REST_URL`.",
 			},
 			"rest_token": schema.StringAttribute{
 				Computed:  true,
 				Sensitive: true,
 				Description: "The plaintext K/V token (format `capy_kv_...`). Returned exactly once at creation " +
-					"and stored in state; set it as `CAPYDB_KV_REST_TOKEN`. Empty on an imported resource, because " +
+					"and stored in state; set it as `CAPYKV_REST_TOKEN`. Empty on an imported resource, because " +
 					"the control plane keeps only its hash. Rotation is not a Terraform operation - use the " +
 					"dashboard or `capydb kv rotate-token`, and take the new token from that output: a refresh " +
 					"cannot recover it and deliberately preserves the value already in state, so a rotation " +
@@ -110,8 +110,9 @@ func (r *kvStoreResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			"redis_url": schema.StringAttribute{
 				Computed:  true,
 				Sensitive: true,
-				Description: "RESP endpoint for ordinary Redis(R) OSS clients. Carries the token as its password " +
-					"at creation; after an import it has no password, because the token is not recoverable. Like " +
+				Description: "RESP endpoint for ordinary Redis(R) OSS clients. Set it as `CAPYKV_REDIS_URL`. " +
+					"Carries the token as its password at creation; after an import it has no password, because " +
+					"the token is not recoverable. Like " +
 					"`rest_token` it is preserved across refreshes rather than rebuilt, so it goes stale with the " +
 					"token when the token is rotated elsewhere.",
 				PlanModifiers: []planmodifier.String{
