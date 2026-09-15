@@ -43,6 +43,7 @@ type projectModel struct {
 	Name              types.String   `tfsdk:"name"`
 	Region            types.String   `tfsdk:"region"`
 	Environment       types.String   `tfsdk:"environment"`
+	AlwaysOn          types.Bool     `tfsdk:"always_on"`
 	PostgresVersion   types.String   `tfsdk:"postgres_version"`
 	Slug              types.String   `tfsdk:"slug"`
 	Plan              types.String   `tfsdk:"plan"`
@@ -58,6 +59,7 @@ func (m *projectModel) fill(project capydb.Project) {
 	m.Name = types.StringValue(project.Name)
 	m.Region = types.StringValue(project.Region)
 	m.Environment = types.StringValue(project.Environment)
+	m.AlwaysOn = types.BoolValue(project.AlwaysOn)
 	// Empty while the database is still provisioning; the post-provision read
 	// fills the real major so the attribute is stable in state.
 	if project.PostgresVersion != "" {
@@ -112,6 +114,13 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 				Validators: []validator.String{
 					stringvalidator.OneOf("production", "non_production"),
 				},
+			},
+			"always_on": schema.BoolAttribute{
+				Optional: true,
+				Computed: true,
+				Description: "Whether the database is exempt from pausing when idle. Defaults to `true` for " +
+					"`production` and `false` for `non_production`; changing the environment without setting " +
+					"this re-derives it. Updatable in place.",
 			},
 			"postgres_version": schema.StringAttribute{
 				Optional: true,
@@ -263,14 +272,23 @@ func (r *projectResource) Update(ctx context.Context, req resource.UpdateRequest
 		return
 	}
 
-	// Environment is the only in-place updatable attribute (PATCH
-	// /v1/projects/{id} only accepts `environment`).
+	// Environment and always_on are the in-place updatable attributes (PATCH
+	// /v1/projects/{id}). They are sent together: the control plane re-derives
+	// always_on from a changed environment unless told otherwise, so a config
+	// that pins always_on keeps its value across an environment change.
+	update := capydb.UpdateProjectRequest{}
 	if !plan.Environment.IsNull() && !plan.Environment.IsUnknown() &&
 		plan.Environment.ValueString() != state.Environment.ValueString() {
 		environment := plan.Environment.ValueString()
-		project, err := r.client.UpdateProject(ctx, state.ID.ValueString(), capydb.UpdateProjectRequest{
-			Environment: &environment,
-		})
+		update.Environment = &environment
+	}
+	if !plan.AlwaysOn.IsNull() && !plan.AlwaysOn.IsUnknown() &&
+		(update.Environment != nil || plan.AlwaysOn.ValueBool() != state.AlwaysOn.ValueBool()) {
+		alwaysOn := plan.AlwaysOn.ValueBool()
+		update.AlwaysOn = &alwaysOn
+	}
+	if update.Environment != nil || update.AlwaysOn != nil {
+		project, err := r.client.UpdateProject(ctx, state.ID.ValueString(), update)
 		if err != nil {
 			resp.Diagnostics.AddError("Error updating CapyDB project", err.Error())
 			return

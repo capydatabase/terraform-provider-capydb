@@ -49,6 +49,7 @@ resource "capydb_project" "staging" {
   forces a replacement.
 - `environment` (String) Environment label, either `production` or `non_production`. Updatable in
   place.
+- `always_on` (Boolean) Whether the database is exempt from pausing when idle. Defaults to `true` for `production` and `false` for `non_production`; changing the environment without setting this re-derives it. Updatable in place.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only

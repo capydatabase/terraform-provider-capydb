@@ -142,6 +142,7 @@ func (m *mockControlPlane) handler() http.Handler {
 			OrganizationID:    "org_1",
 			PrimaryInstanceID: "inst_auto",
 			Environment:       environment,
+			AlwaysOn:          environment == "production",
 			Plan:              "launch",
 			Name:              request.Name,
 			PostgresVersion:   postgresVersion,
@@ -193,8 +194,16 @@ func (m *mockControlPlane) handler() http.Handler {
 				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "environment must be one of production or non_production"})
 				return
 			}
+			// Mirror the real backend: a changed environment re-derives
+			// always_on unless the request pins it.
+			if *request.Environment != project.Environment && request.AlwaysOn == nil {
+				project.AlwaysOn = *request.Environment == "production"
+			}
 			project.Environment = *request.Environment
 			m.patchedEnvs = append(m.patchedEnvs, *request.Environment)
+		}
+		if request.AlwaysOn != nil {
+			project.AlwaysOn = *request.AlwaysOn
 		}
 		writeJSON(w, http.StatusOK, map[string]any{"project": project})
 	})

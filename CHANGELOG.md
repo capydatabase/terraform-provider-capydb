@@ -8,6 +8,10 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Added
 
+- `capydb_project.always_on` (optional, computed): whether the database is exempt from pausing
+  when idle. Defaults server-side to `true` for `production` and `false` for `non_production`; a
+  config that pins it keeps its value across an environment change. Updatable in place.
+
 - **`capydb_kv_store`** - a project's K/V store (CapyDB Knight/Valkyrie: key-value and rate
   limiting), running in its own KV cell beside the database rather than inside it. `project_id` is
   the only configurable attribute and forces a replacement; the store is sized from the

@@ -169,6 +169,9 @@ func TestProjectResourceCRUD(t *testing.T) {
 	if got := stateString(t, createResp.State, "environment"); got != "non_production" {
 		t.Errorf("environment = %q", got)
 	}
+	if got := stateBool(t, createResp.State, "always_on"); got {
+		t.Errorf("always_on after a non_production create = %v, want false (server-derived)", got)
+	}
 	if got := stateString(t, createResp.State, "plan"); got != "launch" {
 		t.Errorf("plan = %q (must be server-derived)", got)
 	}
@@ -195,7 +198,8 @@ func TestProjectResourceCRUD(t *testing.T) {
 		t.Errorf("name = %q", got)
 	}
 
-	// Update (environment is the only in-place updatable attribute).
+	// Update (environment and always_on are the in-place updatable attributes). Promoting to
+	// production without pinning always_on lets the server re-derive it.
 	updatePlanRaw := objectValue(t, schemaType, map[string]tftypes.Value{
 		"id":          str(projectID),
 		"name":        str("my app"),
@@ -209,6 +213,26 @@ func TestProjectResourceCRUD(t *testing.T) {
 	requireNoDiags(t, "update", updateResp.Diagnostics)
 	if got := stateString(t, updateResp.State, "environment"); got != "production" {
 		t.Errorf("environment after update = %q", got)
+	}
+	if got := stateBool(t, updateResp.State, "always_on"); !got {
+		t.Errorf("always_on after promotion to production = %v, want true (re-derived by the server)", got)
+	}
+
+	// Pinning always_on alone is an in-place update too.
+	pinPlanRaw := objectValue(t, schemaType, map[string]tftypes.Value{
+		"id":          str(projectID),
+		"name":        str("my app"),
+		"environment": str("production"),
+		"always_on":   tftypes.NewValue(tftypes.Bool, false),
+	})
+	pinResp := resource.UpdateResponse{State: updateResp.State}
+	r.Update(ctx, resource.UpdateRequest{
+		Plan:  tfsdk.Plan{Schema: s, Raw: pinPlanRaw},
+		State: updateResp.State,
+	}, &pinResp)
+	requireNoDiags(t, "update always_on", pinResp.Diagnostics)
+	if got := stateBool(t, pinResp.State, "always_on"); got {
+		t.Errorf("always_on after pinning it false = %v, want false", got)
 	}
 	mock.mu.Lock()
 	patched := append([]string(nil), mock.patchedEnvs...)
