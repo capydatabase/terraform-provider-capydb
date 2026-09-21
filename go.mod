@@ -3,7 +3,7 @@ module github.com/capydatabase/terraform-provider-capydb
 go 1.27.1
 
 require (
-	github.com/capydatabase/capydbclient v1.12.0
+	github.com/capydatabase/capydbclient v1.13.0
 	github.com/hashicorp/terraform-plugin-framework v1.19.0
 	github.com/hashicorp/terraform-plugin-framework-timeouts v0.7.0
 	github.com/hashicorp/terraform-plugin-framework-validators v0.19.0
