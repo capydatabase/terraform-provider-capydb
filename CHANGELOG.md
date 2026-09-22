@@ -6,6 +6,13 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Security
+
+- **`google.golang.org/grpc` moved past GO-2026-6443** (server panic on a request missing the
+  `:authority`/`Host` header, reachable through the plugin server every provider binary runs).
+  The fix is only on grpc `master` so far — there is no tagged release carrying it — so the
+  indirect requirement is pinned to the post-fix pseudo-version until one exists.
+
 ### Added
 
 - `capydb_project.always_on` (optional, computed): whether the database is exempt from pausing
