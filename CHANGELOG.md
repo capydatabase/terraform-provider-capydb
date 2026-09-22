@@ -6,6 +6,12 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+## [0.1.0] - 2026-09-22
+
+First tagged release. Everything under the date-keyed sections below shipped before the provider had
+a release pipeline; from here on `release.yml` publishes every `vX.Y.Z` tag as a signed GitHub
+release in the Terraform Registry layout.
+
 ### Security
 
 - **`google.golang.org/grpc` moved past GO-2026-6443** (server panic on a request missing the
