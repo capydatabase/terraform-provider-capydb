@@ -157,3 +157,7 @@ Releases are published with GoReleaser following the
 zip archives named `terraform-provider-capydb_VERSION_OS_ARCH.zip`, a `_SHA256SUMS` file with a
 detached GPG signature (`GPG_FINGERPRINT` env), and the registry manifest uploaded as
 `terraform-provider-capydb_VERSION_manifest.json`.
+
+## License
+
+MIT - see [LICENSE](LICENSE).
