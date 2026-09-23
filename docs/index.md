@@ -1,14 +1,14 @@
 ---
 page_title: "CapyDB Provider"
 description: |-
-  Manage CapyDB managed Postgres projects, preview databases, API keys, and webhook endpoints.
+  Manage CapyDB managed Postgres projects, preview databases, K/V stores, API keys, and webhook endpoints.
 ---
 
 # CapyDB Provider
 
 The CapyDB provider manages resources on [CapyDB](https://capydb.dev), a managed Postgres hosting
-service: projects (logical Postgres databases), disposable preview/branch databases, organization
-API keys, and outbound webhook endpoints.
+service: projects (each a dedicated Postgres database cell), disposable preview/branch databases,
+K/V stores, organization API keys, and outbound webhook endpoints.
 
 ## Authentication
 

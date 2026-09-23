@@ -93,10 +93,11 @@ output "database_url" {
 
 | Resource | Purpose |
 | --- | --- |
-| [`capydb_project`](docs/resources/project.md) | A managed logical Postgres database. Async provision/delete; `environment` updatable in place; importable by id. |
+| [`capydb_project`](docs/resources/project.md) | A project and its database cell: a dedicated Postgres instance. Async provision/delete; `environment` updatable in place; importable by id. |
 | [`capydb_preview_database`](docs/resources/preview_database.md) | Disposable preview/branch database with a TTL. Raising `ttl_hours` extends in place; lowering forces replacement. |
 | [`capydb_api_key`](docs/resources/api_key.md) | Organization (or project-scoped) API key. Plaintext key captured once into the sensitive `token` attribute; delete revokes. |
 | [`capydb_webhook_endpoint`](docs/resources/webhook_endpoint.md) | Outbound webhook receiver. Bump `secret_version` to rotate the HMAC signing secret in place. |
+| [`capydb_kv_store`](docs/resources/kv_store.md) | The project's K/V store (key-value and rate limiting), sized by the organization's plan. |
 
 | Data source | Purpose |
 | --- | --- |

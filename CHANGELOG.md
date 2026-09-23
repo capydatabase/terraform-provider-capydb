@@ -8,6 +8,8 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Changed
 
+- The README and registry index list the `capydb_kv_store` resource and describe a project as a
+  dedicated database cell, not a "logical Postgres database".
 - `capydb_api_key.scopes` documents the full grantable set (the eleven tenant scopes or `*`). The
   control plane now rejects any other scope, including the platform's service capabilities, so a
   configuration naming one fails at apply instead of creating an over-privileged key.
