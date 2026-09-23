@@ -1,12 +1,12 @@
 ---
 page_title: "capydb_project Resource - capydb"
 description: |-
-  A CapyDB project (a managed logical Postgres database).
+  A CapyDB project (a dedicated Postgres database cell).
 ---
 
 # capydb_project (Resource)
 
-A CapyDB project (a managed logical Postgres database). Provisioning and deletion run as
+A CapyDB project (a dedicated Postgres database cell). Provisioning and deletion run as
 asynchronous jobs which this resource waits on (bounded by the `timeouts` attribute, 20 minutes by
 default).
 

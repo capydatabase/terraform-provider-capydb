@@ -1,7 +1,7 @@
 # Terraform Provider for CapyDB
 
 The official Terraform/OpenTofu provider for [CapyDB](https://capydb.dev) - simple managed Postgres
-hosting. Manage projects (logical Postgres databases), disposable preview/branch databases,
+hosting. Manage projects (each a dedicated Postgres database cell), disposable preview/branch databases,
 organization API keys, and webhook endpoints as code.
 
 Built on [terraform-plugin-framework](https://github.com/hashicorp/terraform-plugin-framework)

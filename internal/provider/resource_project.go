@@ -79,7 +79,7 @@ func (r *projectResource) Metadata(_ context.Context, req resource.MetadataReque
 
 func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, resp *resource.SchemaResponse) {
 	resp.Schema = schema.Schema{
-		Description: "A CapyDB project (a managed logical Postgres database). Provisioning and deletion run as " +
+		Description: "A CapyDB project (a dedicated Postgres database cell). Provisioning and deletion run as " +
 			"asynchronous jobs which this resource waits on. The project plan is derived from the organization's " +
 			"billing state and cannot be configured here.",
 		Attributes: map[string]schema.Attribute{

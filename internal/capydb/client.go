@@ -123,7 +123,7 @@ func (e *JobFailedError) Error() string {
 	return fmt.Sprintf("job %s (%s) failed: %s", e.Job.ID, e.Job.Type, e.Job.Error)
 }
 
-// Project is a CapyDB project (a logical Postgres database).
+// Project is a CapyDB project (a dedicated Postgres database cell).
 type Project = capydbclient.Project
 
 // CreateProjectRequest creates a project. The plan is derived from the
