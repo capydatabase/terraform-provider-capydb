@@ -44,9 +44,10 @@ output "ci_readonly_token" {
 ### Required
 
 - `name` (String) Human-readable key name. Changing it forces a replacement.
-- `scopes` (List of String) Scopes granted to the key (at least one), e.g. `projects:read`,
-  `projects:write`, `credentials:read`, `backups:read`, `backups:write`, `jobs:read`. Changing it
-  forces a replacement.
+- `scopes` (List of String) Scopes granted to the key (at least one): any of `projects:read`,
+  `projects:write`, `credentials:read`, `backups:read`, `backups:write`, `jobs:read`, `schema:read`,
+  `organizations:read`, `organizations:write`, `api_keys:read`, `api_keys:write`, or `*` for all of
+  them. The API rejects any other scope. Changing it forces a replacement.
 
 ### Optional
 

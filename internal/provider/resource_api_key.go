@@ -77,8 +77,10 @@ func (r *apiKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 			"scopes": schema.ListAttribute{
 				Required:    true,
 				ElementType: types.StringType,
-				Description: "Scopes granted to the key, e.g. `projects:read`, `projects:write`, " +
-					"`credentials:read`, `backups:read`, `backups:write`, `jobs:read`. Changing it forces a replacement.",
+				Description: "Scopes granted to the key: any of `projects:read`, `projects:write`, " +
+					"`credentials:read`, `backups:read`, `backups:write`, `jobs:read`, `schema:read`, " +
+					"`organizations:read`, `organizations:write`, `api_keys:read`, `api_keys:write`, or `*` for all " +
+					"of them. The API rejects any other scope. Changing it forces a replacement.",
 				Validators: []validator.List{
 					listvalidator.SizeAtLeast(1),
 				},

@@ -6,6 +6,12 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Changed
+
+- `capydb_api_key.scopes` documents the full grantable set (the eleven tenant scopes or `*`). The
+  control plane now rejects any other scope, including the platform's service capabilities, so a
+  configuration naming one fails at apply instead of creating an over-privileged key.
+
 ## [0.1.0] - 2026-09-22
 
 First tagged release. Everything under the date-keyed sections below shipped before the provider had
