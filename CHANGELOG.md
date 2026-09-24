@@ -6,6 +6,8 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+## [0.1.1] - 2026-09-24
+
 ### Changed
 
 - The README and registry index list the `capydb_kv_store` resource and describe a project as a
