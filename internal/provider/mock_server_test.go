@@ -35,6 +35,9 @@ type mockControlPlane struct {
 	nextID int
 }
 
+// mockApprovalToken stands for an approval a person created in the dashboard.
+const mockApprovalToken = "ap_handoff"
+
 func newMockControlPlane() *mockControlPlane {
 	return &mockControlPlane{
 		projects:  map[string]*capydb.Project{},
@@ -215,20 +218,22 @@ func (m *mockControlPlane) handler() http.Handler {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "project not found"})
 			return
 		}
-		writeJSON(w, http.StatusCreated, map[string]any{"approval": map[string]any{
-			"id":         "apr_mock",
-			"action":     "project.delete",
-			"expires_at": "2026-01-01T00:10:00Z",
-			"token":      "ap_mock_token",
-		}})
+		// Mirror the real backend: an API key cannot mint an approval.
+		writeJSON(w, http.StatusForbidden, map[string]string{"error": "an approval must come from a person"})
 	})
 
 	mux.HandleFunc("DELETE /v1/projects/{projectID}", func(w http.ResponseWriter, r *http.Request) {
 		m.mu.Lock()
 		defer m.mu.Unlock()
 		projectID := r.PathValue("projectID")
-		if _, ok := m.projects[projectID]; !ok {
+		project, ok := m.projects[projectID]
+		if !ok {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "project not found"})
+			return
+		}
+		// Mirror the real backend: a production delete needs an approval token.
+		if project.Environment == "production" && r.URL.Query().Get("approval_token") != mockApprovalToken {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "this action requires an approval token"})
 			return
 		}
 		delete(m.projects, projectID)

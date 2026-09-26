@@ -3,6 +3,8 @@ package provider
 import (
 	"context"
 	"fmt"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/hashicorp/terraform-plugin-framework-timeouts/resource/timeouts"
@@ -320,7 +322,20 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 		return
 	}
 
-	job, err := r.client.DeleteProject(ctx, state.ID.ValueString())
+	// Deleting a production project takes an approval a person created in the
+	// dashboard; Terraform's plan/apply confirmation is not one, because the
+	// control plane will not let the API key approve its own delete.
+	approvalToken := strings.TrimSpace(os.Getenv("CAPYDB_APPROVAL_TOKEN"))
+	if state.Environment.ValueString() == "production" && approvalToken == "" {
+		resp.Diagnostics.AddError(
+			"Deleting a production project needs an approval",
+			fmt.Sprintf("Project %s is a production project. An organization admin creates a delete approval on the project's settings page in the CapyDB dashboard; "+
+				"set it as CAPYDB_APPROVAL_TOKEN and run apply again within 10 minutes. Nothing was deleted.", state.ID.ValueString()),
+		)
+		return
+	}
+
+	job, err := r.client.DeleteProject(ctx, state.ID.ValueString(), approvalToken)
 	if err != nil {
 		if capydb.IsNotFound(err) {
 			return

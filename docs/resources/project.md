@@ -13,6 +13,13 @@ default).
 The project **plan** is derived from the organization's billing state and cannot be configured
 here. The CapyDB API does not support renaming projects, so changing `name` forces a replacement.
 
+**Deleting a production project needs an approval from a person.** The control plane does not let
+an API key approve its own production delete, so `terraform destroy` (or a replacement) of a
+project whose `environment` is `production` stops before calling the API until an organization
+admin creates a delete approval on the project's settings page in the CapyDB dashboard. Set the
+token as `CAPYDB_APPROVAL_TOKEN` and run apply again within 10 minutes. `non_production` projects
+delete without one.
+
 ## Example Usage
 
 ```terraform

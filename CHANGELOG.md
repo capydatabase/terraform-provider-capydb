@@ -6,6 +6,17 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-09-26
+
+### Changed
+
+- **Deleting a production project takes an approval a person created.** The control plane no
+  longer lets an API key mint the `project.delete` approval, so the provider stops minting one: set
+  `CAPYDB_APPROVAL_TOKEN` to an approval an organization admin created on the project's settings
+  page in the dashboard (valid 10 minutes). Without it, destroying or replacing a `production`
+  project fails before any API call and says where to get one; `non_production` projects are
+  unaffected.
+
 ## [0.1.1] - 2026-09-24
 
 ### Changed

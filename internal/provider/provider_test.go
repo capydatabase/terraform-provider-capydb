@@ -241,7 +241,22 @@ func TestProjectResourceCRUD(t *testing.T) {
 		t.Errorf("PATCH environment calls = %v", patched)
 	}
 
-	// Delete.
+	// Delete. The project is production now, so without an approval the
+	// provider stops before calling the API and says where to get one.
+	t.Setenv("CAPYDB_APPROVAL_TOKEN", "")
+	refusedResp := resource.DeleteResponse{State: updateResp.State}
+	r.Delete(ctx, resource.DeleteRequest{State: updateResp.State}, &refusedResp)
+	if !refusedResp.Diagnostics.HasError() {
+		t.Fatal("deleting a production project without an approval must fail")
+	}
+	mock.mu.Lock()
+	kept := len(mock.projects)
+	mock.mu.Unlock()
+	if kept != 1 {
+		t.Fatalf("projects after a refused delete = %d, want 1", kept)
+	}
+
+	t.Setenv("CAPYDB_APPROVAL_TOKEN", mockApprovalToken)
 	deleteResp := resource.DeleteResponse{State: updateResp.State}
 	r.Delete(ctx, resource.DeleteRequest{State: updateResp.State}, &deleteResp)
 	requireNoDiags(t, "delete", deleteResp.Diagnostics)

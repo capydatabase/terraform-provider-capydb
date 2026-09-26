@@ -258,28 +258,19 @@ func (c *Client) UpdateProject(ctx context.Context, projectID string, request Up
 	return response.Project, nil
 }
 
-// DeleteProject enqueues asynchronous deletion and returns the job.
-// Terraform's own plan/apply approval is the human confirmation for
-// destructive actions, so the control plane's approval token is minted here
-// mechanically: production deletes require a single-use project.delete
-// approval, and minting one for a non-production project is harmless (the
-// token simply goes unconsumed and expires).
-func (c *Client) DeleteProject(ctx context.Context, projectID string) (Job, error) {
-	var mintResponse struct {
-		Approval struct {
-			Token string `json:"token"`
-		} `json:"approval"`
-	}
-	if err := c.do(ctx, http.MethodPost, "/v1/projects/"+url.PathEscape(projectID)+"/approvals",
-		map[string]string{"action": "project.delete"}, &mintResponse); err != nil {
-		return Job{}, err
-	}
-
+// DeleteProject enqueues asynchronous deletion and returns the job. A
+// production project also needs approvalToken: a single-use project.delete
+// approval an organization admin created in the dashboard. The control plane
+// does not let an API key mint its own, so the provider presents the token it
+// is given and never mints one. Non-production projects pass "".
+func (c *Client) DeleteProject(ctx context.Context, projectID, approvalToken string) (Job, error) {
 	var response struct {
 		Job Job `json:"job"`
 	}
-	target := "/v1/projects/" + url.PathEscape(projectID) +
-		"?approval_token=" + url.QueryEscape(mintResponse.Approval.Token)
+	target := "/v1/projects/" + url.PathEscape(projectID)
+	if approvalToken != "" {
+		target += "?approval_token=" + url.QueryEscape(approvalToken)
+	}
 	if err := c.do(ctx, http.MethodDelete, target, nil, &response); err != nil {
 		return Job{}, err
 	}
