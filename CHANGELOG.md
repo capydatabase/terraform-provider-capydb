@@ -6,6 +6,15 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Fixed
+
+- **A configuration naming `region = "hel1"` no longer replaces the database.** The control plane
+  now reports neutral region ids (`eu-north-1`) and accepts `hel1` only as a deprecated alias. The
+  provider keeps the configured alias in state instead of the reported id, and moving a
+  configuration from `hel1` to `eu-north-1` updates state in place; any other region change still
+  forces a replacement. Upgrade the provider before the control plane reports the new ids, and
+  switch configurations to `eu-north-1` (or `data.capydb_regions`) within the deprecation release.
+
 ## [0.2.0] - 2026-09-26
 
 ### Changed

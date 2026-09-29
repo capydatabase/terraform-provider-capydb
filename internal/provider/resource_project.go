@@ -59,7 +59,13 @@ type projectModel struct {
 func (m *projectModel) fill(project capydb.Project) {
 	m.ID = types.StringValue(project.ID)
 	m.Name = types.StringValue(project.Name)
-	m.Region = types.StringValue(project.Region)
+	// Keep a configured deprecated alias (hel1) in state while the API reports the
+	// neutral id it now stands for: overwriting it would plan a replacement of
+	// the database on the next run, and after create the provider would return a
+	// value that differs from the plan.
+	if !sameRegion(m.Region.ValueString(), project.Region) {
+		m.Region = types.StringValue(project.Region)
+	}
 	m.Environment = types.StringValue(project.Environment)
 	m.AlwaysOn = types.BoolValue(project.AlwaysOn)
 	// Empty while the database is still provisioning; the post-provision read
@@ -101,11 +107,15 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 				},
 			},
 			"region": schema.StringAttribute{
-				Optional:    true,
-				Computed:    true,
-				Description: "Region to place the project in. Omit to let CapyDB pick. Changing it forces a replacement.",
+				Optional: true,
+				Computed: true,
+				Description: "Region to place the project in. Omit to let CapyDB pick. Changing it forces a " +
+					"replacement, except between a deprecated region name and the region id it stands for " +
+					"(`hel1` and `eu-north-1`).",
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.RequiresReplaceIf(regionChangeRequiresReplace,
+						"Changing the region forces a replacement.",
+						"Changing the region forces a replacement."),
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
@@ -356,4 +366,32 @@ func (r *projectResource) Delete(ctx context.Context, req resource.DeleteRequest
 
 func (r *projectResource) ImportState(ctx context.Context, req resource.ImportStateRequest, resp *resource.ImportStateResponse) {
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
+}
+
+// deprecatedRegionAliases maps the region names the control plane accepted
+// before neutral region ids to the id each one now stands for. The control
+// plane accepts them as input for one release and reports the neutral id.
+var deprecatedRegionAliases = map[string]string{
+	"hel1": "eu-north-1",
+}
+
+// sameRegion reports whether a region value held in configuration or state
+// names the same region the API reported, either literally or through a
+// deprecated alias.
+func sameRegion(held, reported string) bool {
+	if held == "" {
+		return false
+	}
+	if strings.EqualFold(held, reported) {
+		return true
+	}
+	return deprecatedRegionAliases[strings.ToLower(held)] == reported
+}
+
+// regionChangeRequiresReplace replaces the database only when the planned
+// region is a different region, not when a configuration moves between a
+// deprecated alias and the id it stands for.
+func regionChangeRequiresReplace(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
+	state, planned := req.StateValue.ValueString(), req.PlanValue.ValueString()
+	resp.RequiresReplace = !sameRegion(state, planned) && !sameRegion(planned, state)
 }
