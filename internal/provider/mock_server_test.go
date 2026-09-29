@@ -130,6 +130,11 @@ func (m *mockControlPlane) handler() http.Handler {
 		if region == "" {
 			region = "eu-central"
 		}
+		// Mirror the real backend, which accepts the deprecated hel1 alias and
+		// reports the neutral id it stands for.
+		if region == "hel1" {
+			region = "eu-north-1"
+		}
 		// Mirror the real backend's validation + default (service.
 		// SupportedPostgresVersions / DefaultPostgresVersion).
 		postgresVersion := request.PostgresVersion
