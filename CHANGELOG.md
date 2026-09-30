@@ -6,6 +6,11 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Changed
+
+- Indirect dependency `google.golang.org/genproto/googleapis/rpc`
+  v0.0.0-20260928230214-8a89bd6388cc (was v0.0.0-20260921155816-b14227669459). No behavior change.
+
 ## [0.4.0] - 2026-09-30
 
 ### Added
