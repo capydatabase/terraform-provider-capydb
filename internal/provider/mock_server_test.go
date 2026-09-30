@@ -474,7 +474,9 @@ func (m *mockControlPlane) handler() http.Handler {
 			Scopes:         request.Scopes,
 			Source:         "api",
 			IsActive:       true,
-			CreatedAt:      time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC),
+			// The mock's caller is an organization manager, whose keys carry it.
+			Manager:   true,
+			CreatedAt: time.Date(2026, 6, 10, 0, 0, 0, 0, time.UTC),
 		}
 		m.apiKeys[key.ID] = key
 		writeJSON(w, http.StatusCreated, map[string]any{

@@ -6,6 +6,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework-validators/listvalidator"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/listplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
@@ -38,6 +39,7 @@ type apiKeyModel struct {
 	Token          types.String `tfsdk:"token"`
 	KeyPrefix      types.String `tfsdk:"key_prefix"`
 	IsActive       types.Bool   `tfsdk:"is_active"`
+	Manager        types.Bool   `tfsdk:"manager"`
 }
 
 func (r *apiKeyResource) Metadata(_ context.Context, req resource.MetadataRequest, resp *resource.MetadataResponse) {
@@ -116,6 +118,15 @@ func (r *apiKeyResource) Schema(_ context.Context, _ resource.SchemaRequest, res
 				Computed:    true,
 				Description: "Whether the key is active (not revoked or expired).",
 			},
+			"manager": schema.BoolAttribute{
+				Computed: true,
+				Description: "Whether the key may perform organization admin actions (key management, project " +
+					"deletion, production-overwrite restores, webhook and K/V management). Set at creation from " +
+					"the principal that created it.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
 		},
 	}
 }
@@ -177,6 +188,7 @@ func (r *apiKeyResource) Create(ctx context.Context, req resource.CreateRequest,
 	plan.Token = types.StringValue(created.PlaintextKey)
 	plan.KeyPrefix = types.StringValue(created.APIKey.KeyPrefix)
 	plan.IsActive = types.BoolValue(created.APIKey.IsActive)
+	plan.Manager = types.BoolValue(created.APIKey.Manager)
 	resp.Diagnostics.Append(resp.State.Set(ctx, &plan)...)
 }
 
@@ -207,6 +219,7 @@ func (r *apiKeyResource) Read(ctx context.Context, req resource.ReadRequest, res
 	state.Name = types.StringValue(key.Name)
 	state.KeyPrefix = types.StringValue(key.KeyPrefix)
 	state.IsActive = types.BoolValue(key.IsActive)
+	state.Manager = types.BoolValue(key.Manager)
 	if key.ProjectID != "" {
 		state.ProjectID = types.StringValue(key.ProjectID)
 	}

@@ -21,6 +21,8 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   sensitive): the connection strings of the project's runtime login `app_user`, a role that owns
   nothing and cannot bypass row-level security. Null unless the project has enabled its app role;
   enabling it is not a Terraform operation.
+- `capydb_api_key.manager` (read-only): whether the key may perform organization admin actions
+  (key management, project deletion, production-overwrite restores, webhook and K/V management).
 
 ### Changed
 

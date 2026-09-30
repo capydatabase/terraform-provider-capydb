@@ -65,3 +65,6 @@ output "ci_readonly_token" {
   detected.
 - `key_prefix` (String) Non-secret key prefix used to identify the key.
 - `is_active` (Boolean) Whether the key is active (not revoked or expired).
+- `manager` (Boolean) Whether the key may perform organization admin actions (key management,
+  project deletion, production-overwrite restores, webhook and K/V management). Set at creation
+  from the principal that created it.

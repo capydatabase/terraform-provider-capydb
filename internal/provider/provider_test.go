@@ -405,6 +405,9 @@ func TestAPIKeyResourceCRUD(t *testing.T) {
 	if got := stateString(t, createResp.State, "key_prefix"); got != "capy_live_ab12" {
 		t.Errorf("key_prefix = %q", got)
 	}
+	if !stateBool(t, createResp.State, "manager") {
+		t.Error("manager after create = false, want the API's true")
+	}
 
 	// Read keeps the token from prior state (the API never re-returns it).
 	readResp := resource.ReadResponse{State: createResp.State}
@@ -415,6 +418,9 @@ func TestAPIKeyResourceCRUD(t *testing.T) {
 	}
 	if !stateBool(t, readResp.State, "is_active") {
 		t.Error("is_active should be true")
+	}
+	if !stateBool(t, readResp.State, "manager") {
+		t.Error("manager after read = false, want the API's true")
 	}
 
 	// Delete revokes the key.
