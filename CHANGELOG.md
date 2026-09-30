@@ -6,6 +6,14 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Added
+
+- `capydb_postgres_versions` data source: the Postgres majors a new database can be created on,
+  oldest first. Each entry in `versions` has `version` (the value `capydb_project.postgres_version`
+  takes), `channel` (`previous`, `stable`, `current` or `beta`), `default` and `production_ready`
+  (false for a beta major); `default_version` is the version marked default. `versions` is never
+  null. Needs the `projects:read` scope.
+
 ## [0.3.0] - 2026-09-30
 
 ### Added

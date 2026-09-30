@@ -217,6 +217,42 @@ func TestListRegionsNormalizesNull(t *testing.T) {
 	}
 }
 
+func TestListPostgresVersions(t *testing.T) {
+	var gotPath string
+	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		gotPath = r.URL.Path
+		_, _ = w.Write([]byte(`{"versions":[` +
+			`{"version":"17","channel":"stable","default":true,"production_ready":true},` +
+			`{"version":"19","channel":"beta","default":false,"production_ready":false}]}`))
+	}))
+
+	versions, err := client.ListPostgresVersions(context.Background())
+	if err != nil {
+		t.Fatalf("ListPostgresVersions: %v", err)
+	}
+	if gotPath != "/v1/postgres-versions" {
+		t.Errorf("path = %q, want /v1/postgres-versions", gotPath)
+	}
+	want := []PostgresVersion{
+		{Version: "17", Channel: "stable", Default: true, ProductionReady: true},
+		{Version: "19", Channel: "beta", Default: false, ProductionReady: false},
+	}
+	if len(versions.Versions) != len(want) || versions.Versions[0] != want[0] || versions.Versions[1] != want[1] {
+		t.Errorf("versions = %+v, want %+v", versions.Versions, want)
+	}
+}
+
+func TestListPostgresVersionsNormalizesNull(t *testing.T) {
+	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		_, _ = w.Write([]byte(`{"versions":null}`))
+	}))
+
+	versions, err := client.ListPostgresVersions(context.Background())
+	if err != nil || versions.Versions == nil || len(versions.Versions) != 0 {
+		t.Errorf("ListPostgresVersions = %+v, %v; want a non-nil empty slice", versions, err)
+	}
+}
+
 func TestWaitForJobPollsUntilCompleted(t *testing.T) {
 	var polls atomic.Int32
 	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

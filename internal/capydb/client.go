@@ -187,6 +187,14 @@ type RegionsResponse = capydbclient.RegionsResponse
 // RegionDetail is one region with its display label and location.
 type RegionDetail = capydbclient.RegionDetail
 
+// PostgresVersionsResponse lists the Postgres majors a new database can be
+// created on, oldest first.
+type PostgresVersionsResponse = capydbclient.PostgresVersionsResponse
+
+// PostgresVersion is one Postgres major with its release channel, whether it
+// is the default, and whether it is production ready (false for beta).
+type PostgresVersion = capydbclient.PostgresVersion
+
 // Organization is the org record exposed to its members.
 type Organization = capydbclient.Organization
 
@@ -212,6 +220,17 @@ func (c *Client) ListRegions(ctx context.Context) (RegionsResponse, error) {
 	}
 	response.Regions = capydbclient.NormalizeList(response.Regions)
 	response.RegionDetails = capydbclient.NormalizeList(response.RegionDetails)
+	return response, nil
+}
+
+// ListPostgresVersions lists the Postgres majors a new database can be created
+// on, oldest first. Versions is non-nil.
+func (c *Client) ListPostgresVersions(ctx context.Context) (PostgresVersionsResponse, error) {
+	var response PostgresVersionsResponse
+	if err := c.do(ctx, http.MethodGet, "/v1/postgres-versions", nil, &response); err != nil {
+		return PostgresVersionsResponse{}, err
+	}
+	response.Versions = capydbclient.NormalizeList(response.Versions)
 	return response, nil
 }
 
