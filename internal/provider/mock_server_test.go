@@ -28,6 +28,10 @@ type mockControlPlane struct {
 	jobPolls  map[string]int
 	jobStates map[string]string
 
+	// postgresBetaEnabled mirrors CAPYDB_PG19_BETA_ENABLED: whether new
+	// databases may ask for the beta major.
+	postgresBetaEnabled bool
+
 	secretRotations int
 	extendCalls     []int64
 	patchedEnvs     []string
@@ -141,7 +145,15 @@ func (m *mockControlPlane) handler() http.Handler {
 		if postgresVersion == "" {
 			postgresVersion = "17"
 		}
-		if postgresVersion != "16" && postgresVersion != "17" && postgresVersion != "18" {
+		switch postgresVersion {
+		case "16", "17", "18":
+		case "19":
+			// The beta major is open only while the platform flag is on.
+			if !m.postgresBetaEnabled {
+				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "PostgreSQL 19 is not available for new databases yet (available: 16, 17, 18)"})
+				return
+			}
+		default:
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported postgres version " + postgresVersion})
 			return
 		}

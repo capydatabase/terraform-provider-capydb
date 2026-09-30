@@ -6,6 +6,12 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Added
+
+- `capydb_project.postgres_version` accepts `19`, the beta channel. It is an upstream PostgreSQL
+  beta and not production ready, and the control plane accepts it only while CapyDB offers it (off
+  by default); otherwise the apply fails with the API's error.
+
 ## [0.2.1] - 2026-09-30
 
 ### Fixed

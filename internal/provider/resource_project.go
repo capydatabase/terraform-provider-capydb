@@ -137,10 +137,12 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 			"postgres_version": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
-				Description: "Postgres major version for the database (`16`, `17`, or `18`). Omit for the " +
-					"platform default. Changing it forces a replacement.",
+				Description: "Postgres major version for the database (`16`, `17`, `18`, or `19`). Omit for the " +
+					"platform default. `19` is the beta channel: an upstream PostgreSQL beta that is not production " +
+					"ready, accepted only while CapyDB offers it (off by default; the API rejects it otherwise). " +
+					"Changing it forces a replacement.",
 				Validators: []validator.String{
-					stringvalidator.OneOf("16", "17", "18"),
+					stringvalidator.OneOf("16", "17", "18", "19"),
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),

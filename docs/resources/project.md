@@ -59,6 +59,10 @@ resource "capydb_project" "staging" {
 - `environment` (String) Environment label, either `production` or `non_production`. Updatable in
   place.
 - `always_on` (Boolean) Whether the database is exempt from pausing when idle. Defaults to `true` for `production` and `false` for `non_production`; changing the environment without setting this re-derives it. Updatable in place.
+- `postgres_version` (String) Postgres major version for the database (`16`, `17`, `18`, or `19`).
+  Omit for the platform default. `19` is the beta channel: an upstream PostgreSQL beta that is not
+  production ready, accepted only while CapyDB offers it (off by default; the API rejects it
+  otherwise). Changing it forces a replacement.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
