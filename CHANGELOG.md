@@ -6,6 +6,8 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-09-30
+
 ### Added
 
 - `capydb_postgres_versions` data source: the Postgres majors a new database can be created on,
