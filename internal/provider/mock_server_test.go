@@ -105,6 +105,20 @@ func (m *mockControlPlane) handler() http.Handler {
 		})
 	})
 
+	mux.HandleFunc("GET /v1/postgres-versions", func(w http.ResponseWriter, r *http.Request) {
+		m.mu.Lock()
+		defer m.mu.Unlock()
+		versions := []capydb.PostgresVersion{
+			{Version: "16", Channel: "previous", ProductionReady: true},
+			{Version: "17", Channel: "stable", Default: true, ProductionReady: true},
+			{Version: "18", Channel: "current", ProductionReady: true},
+		}
+		if m.postgresBetaEnabled {
+			versions = append(versions, capydb.PostgresVersion{Version: "19", Channel: "beta"})
+		}
+		writeJSON(w, http.StatusOK, capydb.PostgresVersionsResponse{Versions: versions})
+	})
+
 	mux.HandleFunc("GET /v1/jobs/{jobID}", func(w http.ResponseWriter, r *http.Request) {
 		m.mu.Lock()
 		defer m.mu.Unlock()

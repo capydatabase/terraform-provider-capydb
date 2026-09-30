@@ -2,6 +2,8 @@ package provider
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
@@ -593,6 +595,89 @@ func TestRegionsDataSource(t *testing.T) {
 	}
 }
 
+func TestPostgresVersionsDataSource(t *testing.T) {
+	ctx := context.Background()
+	client, mock := newTestClient(t)
+
+	d := NewPostgresVersionsDataSource()
+	configureDataSource(t, d, client)
+	s := dataSourceSchema(t, d)
+	schemaType := s.Type().TerraformType(ctx)
+
+	read := func() tfsdk.State {
+		t.Helper()
+		configRaw := objectValue(t, schemaType, nil)
+		readResp := datasource.ReadResponse{State: tfsdk.State{Schema: s, Raw: tftypes.NewValue(schemaType, nil)}}
+		d.Read(ctx, datasource.ReadRequest{Config: tfsdk.Config{Schema: s, Raw: configRaw}}, &readResp)
+		requireNoDiags(t, "read", readResp.Diagnostics)
+		return readResp.State
+	}
+
+	state := read()
+	var versions []postgresVersionModel
+	requireNoDiags(t, "get versions", state.GetAttribute(ctx, path.Root("versions"), &versions))
+	if len(versions) != 3 {
+		t.Fatalf("versions = %v, want 16, 17, 18", versions)
+	}
+	stable := versions[1]
+	if stable.Version.ValueString() != "17" || stable.Channel.ValueString() != "stable" ||
+		!stable.Default.ValueBool() || !stable.ProductionReady.ValueBool() {
+		t.Errorf("versions[1] = %v, want 17 / stable / default / production ready", stable)
+	}
+	if got := stateString(t, state, "default_version"); got != "17" {
+		t.Errorf("default_version = %q, want 17", got)
+	}
+
+	// The beta major is listed only while it is on offer, and is not production ready.
+	mock.mu.Lock()
+	mock.postgresBetaEnabled = true
+	mock.mu.Unlock()
+	state = read()
+	requireNoDiags(t, "get versions", state.GetAttribute(ctx, path.Root("versions"), &versions))
+	if len(versions) != 4 {
+		t.Fatalf("versions = %v, want 16, 17, 18, 19", versions)
+	}
+	beta := versions[3]
+	if beta.Version.ValueString() != "19" || beta.Channel.ValueString() != "beta" ||
+		beta.Default.ValueBool() || beta.ProductionReady.ValueBool() {
+		t.Errorf("versions[3] = %v, want 19 / beta / not default / not production ready", beta)
+	}
+}
+
+// An empty catalog reads as an empty list and a null default, never a null list.
+func TestPostgresVersionsDataSourceEmpty(t *testing.T) {
+	ctx := context.Background()
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		_, _ = w.Write([]byte(`{"versions":null}`))
+	}))
+	t.Cleanup(server.Close)
+	client, err := capydb.NewClient(server.URL, "capy_live_test", "test")
+	if err != nil {
+		t.Fatalf("NewClient: %v", err)
+	}
+
+	d := NewPostgresVersionsDataSource()
+	configureDataSource(t, d, client)
+	s := dataSourceSchema(t, d)
+	schemaType := s.Type().TerraformType(ctx)
+
+	configRaw := objectValue(t, schemaType, nil)
+	readResp := datasource.ReadResponse{State: tfsdk.State{Schema: s, Raw: tftypes.NewValue(schemaType, nil)}}
+	d.Read(ctx, datasource.ReadRequest{Config: tfsdk.Config{Schema: s, Raw: configRaw}}, &readResp)
+	requireNoDiags(t, "read", readResp.Diagnostics)
+
+	var versions types.List
+	requireNoDiags(t, "get versions", readResp.State.GetAttribute(ctx, path.Root("versions"), &versions))
+	if versions.IsNull() || len(versions.Elements()) != 0 {
+		t.Errorf("versions = %v, want an empty non-null list", versions)
+	}
+	var defaultVersion types.String
+	requireNoDiags(t, "get default_version", readResp.State.GetAttribute(ctx, path.Root("default_version"), &defaultVersion))
+	if !defaultVersion.IsNull() {
+		t.Errorf("default_version = %v, want null", defaultVersion)
+	}
+}
+
 func TestProjectDataSourceBySlugAndID(t *testing.T) {
 	ctx := context.Background()
 	client, _ := newTestClient(t)
@@ -735,8 +820,8 @@ func TestProviderMetadataAndSchema(t *testing.T) {
 	if len(p.Resources(ctx)) != 5 {
 		t.Errorf("resources = %d, want 5", len(p.Resources(ctx)))
 	}
-	if len(p.DataSources(ctx)) != 4 {
-		t.Errorf("data sources = %d, want 4", len(p.DataSources(ctx)))
+	if len(p.DataSources(ctx)) != 5 {
+		t.Errorf("data sources = %d, want 5", len(p.DataSources(ctx)))
 	}
 }
 
