@@ -23,6 +23,9 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   enabling it is not a Terraform operation.
 - `capydb_api_key.manager` (read-only): whether the key may perform organization admin actions
   (key management, project deletion, production-overwrite restores, webhook and K/V management).
+- `capydb_kv_store.stopped_reason` (read-only), and `state` documents `stopped`: the platform
+  stopped the store (`org_suspended`), keeps its data and starts it again when the reason clears. A
+  stopped store stays in state and plans no change.
 
 ### Changed
 

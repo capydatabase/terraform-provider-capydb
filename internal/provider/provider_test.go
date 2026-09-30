@@ -790,6 +790,42 @@ func TestKVStoreResourceCRUD(t *testing.T) {
 		t.Errorf("state = %q", got)
 	}
 
+	// A store the platform stopped stays in state with its reason and its token;
+	// it is not an error and not gone.
+	mock.mu.Lock()
+	mock.kvStores["project_1"].State = "stopped"
+	mock.kvStores["project_1"].StoppedReason = "org_suspended"
+	mock.mu.Unlock()
+	stoppedResp := resource.ReadResponse{State: readResp.State}
+	r.Read(ctx, resource.ReadRequest{State: readResp.State}, &stoppedResp)
+	requireNoDiags(t, "read stopped", stoppedResp.Diagnostics)
+	if stoppedResp.State.Raw.IsNull() {
+		t.Fatal("a stopped store must stay in state")
+	}
+	if got := stateString(t, stoppedResp.State, "state"); got != "stopped" {
+		t.Errorf("state = %q, want stopped", got)
+	}
+	if got := stateString(t, stoppedResp.State, "stopped_reason"); got != "org_suspended" {
+		t.Errorf("stopped_reason = %q, want org_suspended", got)
+	}
+	if got := stateString(t, stoppedResp.State, "rest_token"); got != "capy_kv_secret" {
+		t.Errorf("rest_token while stopped = %q, want preserved capy_kv_secret", got)
+	}
+
+	// Once the reason clears, stopped_reason goes back to null.
+	mock.mu.Lock()
+	mock.kvStores["project_1"].State = "running"
+	mock.kvStores["project_1"].StoppedReason = ""
+	mock.mu.Unlock()
+	runningResp := resource.ReadResponse{State: stoppedResp.State}
+	r.Read(ctx, resource.ReadRequest{State: stoppedResp.State}, &runningResp)
+	requireNoDiags(t, "read restarted", runningResp.Diagnostics)
+	var reason types.String
+	requireNoDiags(t, "get stopped_reason", runningResp.State.GetAttribute(ctx, path.Root("stopped_reason"), &reason))
+	if !reason.IsNull() {
+		t.Errorf("stopped_reason after restart = %v, want null", reason)
+	}
+
 	// A second store on the same project is a conflict, not a silent no-op.
 	conflictResp := resource.CreateResponse{State: emptyResourceState(t, s)}
 	r.Create(ctx, resource.CreateRequest{

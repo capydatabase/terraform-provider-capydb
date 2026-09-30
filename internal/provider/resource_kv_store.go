@@ -32,6 +32,7 @@ type kvStoreModel struct {
 	ID              types.String `tfsdk:"id"`
 	ProjectID       types.String `tfsdk:"project_id"`
 	State           types.String `tfsdk:"state"`
+	StoppedReason   types.String `tfsdk:"stopped_reason"`
 	MaxMemoryMB     types.Int64  `tfsdk:"maxmemory_mb"`
 	MaxMemoryPolicy types.String `tfsdk:"maxmemory_policy"`
 	Persistence     types.String `tfsdk:"persistence"`
@@ -72,8 +73,15 @@ func (r *kvStoreResource) Schema(_ context.Context, _ resource.SchemaRequest, re
 			},
 			"state": schema.StringAttribute{
 				Computed: true,
-				Description: "Lifecycle state: `provisioning`, `running`, `error` or `destroying`. Creation is " +
-					"asynchronous, so a freshly created store reads as `provisioning`.",
+				Description: "Lifecycle state: `provisioning`, `running`, `stopped`, `error` or `destroying`. " +
+					"Creation is asynchronous, so a freshly created store reads as `provisioning`. `stopped` means " +
+					"the platform stopped the store (see `stopped_reason`); it keeps its data and starts again when " +
+					"the reason clears, so it is not drift and plans no change.",
+			},
+			"stopped_reason": schema.StringAttribute{
+				Computed: true,
+				Description: "Why the platform stopped the store, set only while `state` is `stopped`: " +
+					"`org_suspended` when the organization's suspension took it offline. Null otherwise.",
 			},
 			"maxmemory_mb": schema.Int64Attribute{
 				Computed: true,
@@ -219,6 +227,7 @@ func applyKVStore(model *kvStoreModel, store capydb.KVStore) {
 	model.ID = types.StringValue(store.ID)
 	model.ProjectID = types.StringValue(store.ProjectID)
 	model.State = types.StringValue(store.State)
+	model.StoppedReason = optionalString(store.StoppedReason)
 	model.MaxMemoryMB = types.Int64Value(int64(store.MaxMemoryMB))
 	model.MaxMemoryPolicy = types.StringValue(store.MaxMemoryPolicy)
 	model.Persistence = types.StringValue(store.Persistence)

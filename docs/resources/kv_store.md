@@ -76,8 +76,12 @@ destroys the store and its data.
 ### Read-Only
 
 - `id` (String) K/V store id.
-- `state` (String) Lifecycle state: `provisioning`, `running`, `error` or `destroying`. Creation is
-  asynchronous, so a freshly created store reads as `provisioning`.
+- `state` (String) Lifecycle state: `provisioning`, `running`, `stopped`, `error` or `destroying`.
+  Creation is asynchronous, so a freshly created store reads as `provisioning`. `stopped` means the
+  platform stopped the store (see `stopped_reason`); it keeps its data and starts again when the
+  reason clears, so it is not drift and plans no change.
+- `stopped_reason` (String) Why the platform stopped the store, set only while `state` is
+  `stopped`: `org_suspended` when the organization's suspension took it offline. Null otherwise.
 - `maxmemory_mb` (Number) Storable capacity in MB, derived from the organization's plan. This is
   what the store will hold - the KV cell's own memory ceiling is larger so a snapshot fork has
   headroom, and that difference is not usable capacity.
