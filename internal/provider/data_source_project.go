@@ -36,6 +36,8 @@ type projectDataSourceModel struct {
 	Environment       types.String `tfsdk:"environment"`
 	Plan              types.String `tfsdk:"plan"`
 	PostgresVersion   types.String `tfsdk:"postgres_version"`
+	PostgresChannel   types.String `tfsdk:"postgres_channel"`
+	PostgresWarning   types.String `tfsdk:"postgres_warning"`
 	Region            types.String `tfsdk:"region"`
 	State             types.String `tfsdk:"state"`
 	OrganizationID    types.String `tfsdk:"organization_id"`
@@ -50,6 +52,8 @@ func (m *projectDataSourceModel) fill(project capydb.Project) {
 	m.Environment = types.StringValue(project.Environment)
 	m.Plan = types.StringValue(project.Plan)
 	m.PostgresVersion = types.StringValue(project.PostgresVersion)
+	m.PostgresChannel = optionalString(project.PostgresChannel)
+	m.PostgresWarning = optionalString(project.PostgresWarning)
 	m.Region = types.StringValue(project.Region)
 	m.State = types.StringValue(project.State)
 	m.OrganizationID = types.StringValue(project.OrganizationID)
@@ -79,10 +83,20 @@ func (d *projectDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 			"environment":         schema.StringAttribute{Computed: true, Description: "Environment label."},
 			"plan":                schema.StringAttribute{Computed: true, Description: "Billing-derived project plan."},
 			"postgres_version":    schema.StringAttribute{Computed: true, Description: "Postgres major version of the database."},
-			"region":              schema.StringAttribute{Computed: true, Description: "Region the project lives in."},
-			"state":               schema.StringAttribute{Computed: true, Description: "Lifecycle state."},
-			"organization_id":     schema.StringAttribute{Computed: true, Description: "Owning organization id."},
-			"database_name":       schema.StringAttribute{Computed: true, Description: "Underlying Postgres database name."},
+			"postgres_channel": schema.StringAttribute{
+				Computed: true,
+				Description: "Release channel of the Postgres major: `previous`, `stable`, `current` or `beta`. " +
+					"Null while the database is still provisioning.",
+			},
+			"postgres_warning": schema.StringAttribute{
+				Computed: true,
+				Description: "What CapyDB does not guarantee for this database, set only when its Postgres major " +
+					"is not production ready (the beta channel). Null otherwise.",
+			},
+			"region":          schema.StringAttribute{Computed: true, Description: "Region the project lives in."},
+			"state":           schema.StringAttribute{Computed: true, Description: "Lifecycle state."},
+			"organization_id": schema.StringAttribute{Computed: true, Description: "Owning organization id."},
+			"database_name":   schema.StringAttribute{Computed: true, Description: "Underlying Postgres database name."},
 		},
 	}
 }

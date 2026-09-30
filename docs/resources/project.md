@@ -68,6 +68,11 @@ resource "capydb_project" "staging" {
 ### Read-Only
 
 - `id` (String) Project id.
+- `postgres_channel` (String) Release channel of the database's Postgres major: `previous`,
+  `stable`, `current` or `beta`. Read from the API on every refresh, so it follows a major upgrade
+  or a re-classification of the major. Null while the database is still provisioning.
+- `postgres_warning` (String) What CapyDB does not guarantee for this database, set only when its
+  Postgres major is not production ready (the beta channel). Null otherwise.
 - `slug` (String) URL-safe project slug derived from the name.
 - `plan` (String) Project plan (e.g. `vibe`, `ship`, `business`). Derived from the organization's
   billing state; never configurable.

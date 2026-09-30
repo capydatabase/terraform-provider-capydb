@@ -47,6 +47,8 @@ type projectModel struct {
 	Environment       types.String   `tfsdk:"environment"`
 	AlwaysOn          types.Bool     `tfsdk:"always_on"`
 	PostgresVersion   types.String   `tfsdk:"postgres_version"`
+	PostgresChannel   types.String   `tfsdk:"postgres_channel"`
+	PostgresWarning   types.String   `tfsdk:"postgres_warning"`
 	Slug              types.String   `tfsdk:"slug"`
 	Plan              types.String   `tfsdk:"plan"`
 	PrimaryInstanceID types.String   `tfsdk:"primary_instance_id"`
@@ -73,6 +75,8 @@ func (m *projectModel) fill(project capydb.Project) {
 	if project.PostgresVersion != "" {
 		m.PostgresVersion = types.StringValue(project.PostgresVersion)
 	}
+	m.PostgresChannel = optionalString(project.PostgresChannel)
+	m.PostgresWarning = optionalString(project.PostgresWarning)
 	m.Slug = types.StringValue(project.Slug)
 	m.Plan = types.StringValue(project.Plan)
 	m.PrimaryInstanceID = types.StringValue(project.PrimaryInstanceID)
@@ -146,6 +150,23 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplace(),
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"postgres_channel": schema.StringAttribute{
+				Computed: true,
+				Description: "Release channel of the database's Postgres major: `previous`, `stable`, `current` " +
+					"or `beta`. Read from the API on every refresh, so it follows a major upgrade or a " +
+					"re-classification of the major. Null while the database is still provisioning.",
+				PlanModifiers: []planmodifier.String{
+					stringplanmodifier.UseStateForUnknown(),
+				},
+			},
+			"postgres_warning": schema.StringAttribute{
+				Computed: true,
+				Description: "What CapyDB does not guarantee for this database, set only when its Postgres major " +
+					"is not production ready (the beta channel). Null otherwise.",
+				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
@@ -396,4 +417,12 @@ func sameRegion(held, reported string) bool {
 func regionChangeRequiresReplace(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
 	state, planned := req.StateValue.ValueString(), req.PlanValue.ValueString()
 	resp.RequiresReplace = !sameRegion(state, planned) && !sameRegion(planned, state)
+}
+
+// optionalString maps a field the API omits when empty to null rather than "".
+func optionalString(value string) types.String {
+	if value == "" {
+		return types.StringNull()
+	}
+	return types.StringValue(value)
 }

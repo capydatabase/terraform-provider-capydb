@@ -39,6 +39,9 @@ type mockControlPlane struct {
 	nextID int
 }
 
+// mockPostgresBetaWarning stands for model.PostgresBetaWarning.
+const mockPostgresBetaWarning = "This database runs a PostgreSQL beta release and is not for production data."
+
 // mockApprovalToken stands for an approval a person created in the dashboard.
 const mockApprovalToken = "ap_handoff"
 
@@ -157,6 +160,12 @@ func (m *mockControlPlane) handler() http.Handler {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported postgres version " + postgresVersion})
 			return
 		}
+		// Mirror model.PostgresChannelNotice: the channel of each major, and
+		// the warning only for the beta one.
+		channel, warning := map[string]string{"16": "previous", "17": "stable", "18": "current", "19": "beta"}[postgresVersion], ""
+		if channel == "beta" {
+			warning = mockPostgresBetaWarning
+		}
 		project := &capydb.Project{
 			ID:                m.id("prj"),
 			OrganizationID:    "org_1",
@@ -166,6 +175,8 @@ func (m *mockControlPlane) handler() http.Handler {
 			Plan:              "launch",
 			Name:              request.Name,
 			PostgresVersion:   postgresVersion,
+			PostgresChannel:   channel,
+			PostgresWarning:   warning,
 			Slug:              strings.ReplaceAll(strings.ToLower(request.Name), " ", "-"),
 			Region:            region,
 			DatabaseName:      "db_" + request.Name,

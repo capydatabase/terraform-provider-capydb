@@ -33,6 +33,11 @@ data "capydb_project" "by_id" {
 - `primary_instance_id` (String) Identifier of the database cell the project runs in.
 - `environment` (String) Environment label.
 - `plan` (String) Billing-derived project plan.
+- `postgres_version` (String) Postgres major version of the database.
+- `postgres_channel` (String) Release channel of the Postgres major: `previous`, `stable`, `current`
+  or `beta`. Null while the database is still provisioning.
+- `postgres_warning` (String) What CapyDB does not guarantee for this database, set only when its
+  Postgres major is not production ready (the beta channel). Null otherwise.
 - `region` (String) Region the project lives in.
 - `state` (String) Lifecycle state.
 - `organization_id` (String) Owning organization id.
