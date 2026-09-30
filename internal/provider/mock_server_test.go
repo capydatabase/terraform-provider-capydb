@@ -24,6 +24,7 @@ type mockControlPlane struct {
 	previews  map[string]*capydb.PreviewDatabase
 	apiKeys   map[string]*capydb.APIKey
 	kvStores  map[string]*capydb.KVStore // keyed by project id: a project has at most one
+	appRoles  map[string]bool            // project ids that enabled their app role
 	webhooks  map[string]*capydb.WebhookEndpoint
 	jobPolls  map[string]int
 	jobStates map[string]string
@@ -51,6 +52,7 @@ func newMockControlPlane() *mockControlPlane {
 		previews:  map[string]*capydb.PreviewDatabase{},
 		apiKeys:   map[string]*capydb.APIKey{},
 		kvStores:  map[string]*capydb.KVStore{},
+		appRoles:  map[string]bool{},
 		webhooks:  map[string]*capydb.WebhookEndpoint{},
 		jobPolls:  map[string]int{},
 		jobStates: map[string]string{},
@@ -281,11 +283,21 @@ func (m *mockControlPlane) handler() http.Handler {
 			writeJSON(w, http.StatusNotFound, map[string]string{"error": "project not found"})
 			return
 		}
-		writeJSON(w, http.StatusOK, map[string]any{"connections": capydb.ConnectionInfo{
+		connections := capydb.ConnectionInfo{
 			DirectURL: "postgres://user:pass@host:5432/" + project.DatabaseName,
 			PooledURL: "postgres://user:pass@host:6432/" + project.DatabaseName,
 			Username:  "user_" + project.ID,
-		}})
+		}
+		// Mirror the real backend: "app" is present only once the project has
+		// enabled its runtime login.
+		if m.appRoles[project.ID] {
+			connections.App = &capydb.AppRoleConnectionInfo{
+				DirectURL: "postgres://app_user:apppass@host:5432/" + project.DatabaseName,
+				PooledURL: "postgres://app_user:apppass@host:6432/" + project.DatabaseName,
+				Username:  "app_user",
+			}
+		}
+		writeJSON(w, http.StatusOK, map[string]any{"connections": connections})
 	})
 
 	mux.HandleFunc("POST /v1/projects/{projectID}/preview-databases", func(w http.ResponseWriter, r *http.Request) {

@@ -12,6 +12,7 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 
 	"github.com/capydatabase/terraform-provider-capydb/internal/capydb"
@@ -629,7 +630,7 @@ func TestProjectDataSourceBySlugAndID(t *testing.T) {
 
 func TestProjectConnectionDataSource(t *testing.T) {
 	ctx := context.Background()
-	client, _ := newTestClient(t)
+	client, mock := newTestClient(t)
 
 	project, _, err := client.CreateProject(ctx, capydb.CreateProjectRequest{Name: "conn"})
 	if err != nil {
@@ -654,6 +655,34 @@ func TestProjectConnectionDataSource(t *testing.T) {
 	}
 	if got := stateString(t, readResp.State, "username"); got != "user_"+project.ID {
 		t.Errorf("username = %q", got)
+	}
+	// Without the app role the app attributes are null, not "".
+	for _, name := range []string{"app_username", "app_pooled_url", "app_direct_url"} {
+		var value types.String
+		requireNoDiags(t, "get "+name, readResp.State.GetAttribute(ctx, path.Root(name), &value))
+		if !value.IsNull() {
+			t.Errorf("%s = %v, want null while the app role is off", name, value)
+		}
+	}
+
+	// Once the project enables its app role, its URLs come through.
+	mock.mu.Lock()
+	mock.appRoles[project.ID] = true
+	mock.mu.Unlock()
+	readResp = datasource.ReadResponse{State: tfsdk.State{Schema: s, Raw: tftypes.NewValue(schemaType, nil)}}
+	d.Read(ctx, datasource.ReadRequest{Config: tfsdk.Config{Schema: s, Raw: configRaw}}, &readResp)
+	requireNoDiags(t, "read with app role", readResp.Diagnostics)
+	if got := stateString(t, readResp.State, "app_username"); got != "app_user" {
+		t.Errorf("app_username = %q", got)
+	}
+	if got := stateString(t, readResp.State, "app_pooled_url"); got != "postgres://app_user:apppass@host:6432/db_conn" {
+		t.Errorf("app_pooled_url = %q", got)
+	}
+	if got := stateString(t, readResp.State, "app_direct_url"); got != "postgres://app_user:apppass@host:5432/db_conn" {
+		t.Errorf("app_direct_url = %q", got)
+	}
+	if !s.Attributes["app_pooled_url"].IsSensitive() || !s.Attributes["app_direct_url"].IsSensitive() {
+		t.Error("app role URLs must be sensitive")
 	}
 }
 

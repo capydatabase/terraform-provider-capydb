@@ -27,6 +27,13 @@ output "database_url" {
   value     = data.capydb_project_connection.app.pooled_url
   sensitive = true
 }
+
+# With split roles enabled, run the application as app_user (RLS applies) and
+# keep the owner URL for migrations.
+output "app_database_url" {
+  value     = coalesce(data.capydb_project_connection.app.app_pooled_url, data.capydb_project_connection.app.pooled_url)
+  sensitive = true
+}
 ```
 
 ## Schema
@@ -42,3 +49,10 @@ output "database_url" {
 - `direct_url` (String, Sensitive) Direct Postgres connection URL for migrations and long-lived
   sessions.
 - `username` (String) Database role the URLs authenticate as.
+- `app_username` (String) The project's runtime login (`app_user`): a role that owns nothing and
+  cannot bypass row-level security. Null unless the project has enabled its app role.
+- `app_pooled_url` (String, Sensitive) Pooled connection URL for the app role - the default for
+  application traffic when the project uses split roles. Null unless the project has enabled its
+  app role.
+- `app_direct_url` (String, Sensitive) Direct connection URL for the app role. Null unless the
+  project has enabled its app role.

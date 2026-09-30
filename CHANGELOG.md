@@ -17,6 +17,10 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   and is null otherwise.
 - `capydb_regions.region_details`: the same regions as `regions`, in the same order, each with its
   `id`, `display_name` and `location`. `regions[*].slug` is unchanged.
+- `capydb_project_connection.app_username`, `app_pooled_url` and `app_direct_url` (URLs
+  sensitive): the connection strings of the project's runtime login `app_user`, a role that owns
+  nothing and cannot bypass row-level security. Null unless the project has enabled its app role;
+  enabling it is not a Terraform operation.
 
 ### Changed
 

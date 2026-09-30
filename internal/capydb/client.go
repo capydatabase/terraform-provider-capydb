@@ -137,6 +137,10 @@ type UpdateProjectRequest = capydbclient.UpdateProjectRequest
 // ConnectionInfo carries the credential-embedded connection URLs.
 type ConnectionInfo = capydbclient.ConnectionInfo
 
+// AppRoleConnectionInfo carries the connection URLs of a project's runtime
+// login (app_user), present on ConnectionInfo.App once the project enabled it.
+type AppRoleConnectionInfo = capydbclient.AppRoleConnectionInfo
+
 // PreviewDatabase is a disposable preview/branch database.
 type PreviewDatabase = capydbclient.PreviewDatabase
 

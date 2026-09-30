@@ -30,6 +30,10 @@ type projectConnectionModel struct {
 	PooledURL types.String `tfsdk:"pooled_url"`
 	DirectURL types.String `tfsdk:"direct_url"`
 	Username  types.String `tfsdk:"username"`
+
+	AppUsername  types.String `tfsdk:"app_username"`
+	AppPooledURL types.String `tfsdk:"app_pooled_url"`
+	AppDirectURL types.String `tfsdk:"app_direct_url"`
 }
 
 func (d *projectConnectionDataSource) Metadata(_ context.Context, req datasource.MetadataRequest, resp *datasource.MetadataResponse) {
@@ -60,6 +64,22 @@ func (d *projectConnectionDataSource) Schema(_ context.Context, _ datasource.Sch
 				Computed:    true,
 				Description: "Database role the URLs authenticate as.",
 			},
+			"app_username": schema.StringAttribute{
+				Computed: true,
+				Description: "The project's runtime login (`app_user`): a role that owns nothing and cannot bypass " +
+					"row-level security. Null unless the project has enabled its app role.",
+			},
+			"app_pooled_url": schema.StringAttribute{
+				Computed:  true,
+				Sensitive: true,
+				Description: "Pooled connection URL for the app role - the default for application traffic when " +
+					"the project uses split roles. Null unless the project has enabled its app role.",
+			},
+			"app_direct_url": schema.StringAttribute{
+				Computed:    true,
+				Sensitive:   true,
+				Description: "Direct connection URL for the app role. Null unless the project has enabled its app role.",
+			},
 		},
 	}
 }
@@ -84,5 +104,13 @@ func (d *projectConnectionDataSource) Read(ctx context.Context, req datasource.R
 	config.PooledURL = types.StringValue(connections.PooledURL)
 	config.DirectURL = types.StringValue(connections.DirectURL)
 	config.Username = types.StringValue(connections.Username)
+	config.AppUsername = types.StringNull()
+	config.AppPooledURL = types.StringNull()
+	config.AppDirectURL = types.StringNull()
+	if app := connections.App; app != nil {
+		config.AppUsername = types.StringValue(app.Username)
+		config.AppPooledURL = types.StringValue(app.PooledURL)
+		config.AppDirectURL = types.StringValue(app.DirectURL)
+	}
 	resp.Diagnostics.Append(resp.State.Set(ctx, &config)...)
 }

@@ -12,3 +12,10 @@ output "database_url" {
   value     = data.capydb_project_connection.app.pooled_url
   sensitive = true
 }
+
+# With split roles enabled, run the application as app_user (RLS applies) and
+# keep the owner URL for migrations.
+output "app_database_url" {
+  value     = coalesce(data.capydb_project_connection.app.app_pooled_url, data.capydb_project_connection.app.pooled_url)
+  sensitive = true
+}
