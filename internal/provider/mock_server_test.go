@@ -95,7 +95,12 @@ func (m *mockControlPlane) handler() http.Handler {
 	})
 
 	mux.HandleFunc("GET /v1/regions", func(w http.ResponseWriter, r *http.Request) {
-		writeJSON(w, http.StatusOK, map[string]any{"regions": []string{"us-east"}})
+		writeJSON(w, http.StatusOK, capydb.RegionsResponse{
+			Regions: []string{"eu-north-1"},
+			RegionDetails: []capydb.RegionDetail{
+				{ID: "eu-north-1", DisplayName: "EU North", Location: "Helsinki, Finland"},
+			},
+		})
 	})
 
 	mux.HandleFunc("GET /v1/jobs/{jobID}", func(w http.ResponseWriter, r *http.Request) {
@@ -135,7 +140,7 @@ func (m *mockControlPlane) handler() http.Handler {
 		}
 		region := request.Region
 		if region == "" {
-			region = "eu-central"
+			region = "eu-north-1"
 		}
 		// Mirror the real backend, which accepts the deprecated hel1 alias and
 		// reports the neutral id it stands for.

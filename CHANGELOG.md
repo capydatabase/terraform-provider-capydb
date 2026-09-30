@@ -15,6 +15,13 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
   source. The channel is `previous`, `stable`, `current` or `beta` and is refreshed on every read,
   so it follows a major upgrade; the warning is set only for a major that is not production ready
   and is null otherwise.
+- `capydb_regions.region_details`: the same regions as `regions`, in the same order, each with its
+  `id`, `display_name` and `location`. `regions[*].slug` is unchanged.
+
+### Changed
+
+- Examples and docs name regions by their neutral ids (`eu-north-1`). `hel1` still works as a
+  deprecated alias of `eu-north-1`.
 
 ## [0.2.1] - 2026-09-30
 

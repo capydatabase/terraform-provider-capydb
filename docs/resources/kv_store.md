@@ -28,7 +28,7 @@ caches, locks - and keep anything you cannot reconstruct in the database cell ne
 ```terraform
 resource "capydb_project" "app" {
   name   = "app"
-  region = "eu-central"
+  region = "eu-north-1"
 }
 
 resource "capydb_kv_store" "app" {

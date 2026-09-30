@@ -175,10 +175,13 @@ type CreatedWebhookEndpoint struct {
 	PlaintextSecret string
 }
 
-// Region is a placement region projects can be created in.
-type Region struct {
-	Slug string `json:"slug"`
-}
+// RegionsResponse lists the placement regions projects can be created in:
+// Regions is the plain id list, RegionDetails the same regions with their
+// display labels.
+type RegionsResponse = capydbclient.RegionsResponse
+
+// RegionDetail is one region with its display label and location.
+type RegionDetail = capydbclient.RegionDetail
 
 // Organization is the org record exposed to its members.
 type Organization = capydbclient.Organization
@@ -197,18 +200,15 @@ func (c *Client) GetViewer(ctx context.Context) (Viewer, error) {
 }
 
 // ListRegions lists the placement regions available to the organization.
-func (c *Client) ListRegions(ctx context.Context) ([]Region, error) {
-	var response struct {
-		Regions []string `json:"regions"`
-	}
+// Both lists are non-nil.
+func (c *Client) ListRegions(ctx context.Context) (RegionsResponse, error) {
+	var response RegionsResponse
 	if err := c.do(ctx, http.MethodGet, "/v1/regions", nil, &response); err != nil {
-		return nil, err
+		return RegionsResponse{}, err
 	}
-	regions := make([]Region, 0, len(response.Regions))
-	for _, slug := range response.Regions {
-		regions = append(regions, Region{Slug: slug})
-	}
-	return regions, nil
+	response.Regions = capydbclient.NormalizeList(response.Regions)
+	response.RegionDetails = capydbclient.NormalizeList(response.RegionDetails)
+	return response, nil
 }
 
 // CreateProject creates a project and returns it plus the asynchronous

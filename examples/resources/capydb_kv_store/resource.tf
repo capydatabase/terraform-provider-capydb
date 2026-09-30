@@ -1,6 +1,6 @@
 resource "capydb_project" "app" {
   name   = "app"
-  region = "eu-central"
+  region = "eu-north-1"
 }
 
 # A K/V store for rate limiting, sessions, queues and caching. It runs in its

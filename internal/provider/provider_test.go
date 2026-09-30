@@ -573,8 +573,16 @@ func TestRegionsDataSource(t *testing.T) {
 	var regions []regionModel
 	diags := readResp.State.GetAttribute(ctx, path.Root("regions"), &regions)
 	requireNoDiags(t, "get regions", diags)
-	if len(regions) != 1 || regions[0].Slug.ValueString() != "us-east" {
-		t.Errorf("regions = %v, want one region with slug us-east", regions)
+	if len(regions) != 1 || regions[0].Slug.ValueString() != "eu-north-1" {
+		t.Errorf("regions = %v, want one region with slug eu-north-1", regions)
+	}
+
+	var details []regionDetailModel
+	diags = readResp.State.GetAttribute(ctx, path.Root("region_details"), &details)
+	requireNoDiags(t, "get region_details", diags)
+	if len(details) != 1 || details[0].ID.ValueString() != "eu-north-1" ||
+		details[0].DisplayName.ValueString() != "EU North" || details[0].Location.ValueString() != "Helsinki, Finland" {
+		t.Errorf("region_details = %v, want eu-north-1 / EU North / Helsinki, Finland", details)
 	}
 }
 

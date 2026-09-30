@@ -184,7 +184,9 @@ func TestListRegions(t *testing.T) {
 	var gotPath string
 	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gotPath = r.URL.Path
-		_, _ = w.Write([]byte(`{"regions":["us-east","eu-central"]}`))
+		_, _ = w.Write([]byte(`{"regions":["eu-north-1","us-east-1"],"region_details":[` +
+			`{"id":"eu-north-1","display_name":"EU North","location":"Helsinki, Finland"},` +
+			`{"id":"us-east-1","display_name":"US East","location":"Ashburn, Virginia"}]}`))
 	}))
 
 	regions, err := client.ListRegions(context.Background())
@@ -194,19 +196,24 @@ func TestListRegions(t *testing.T) {
 	if gotPath != "/v1/regions" {
 		t.Errorf("path = %q, want /v1/regions", gotPath)
 	}
-	if len(regions) != 2 || regions[0].Slug != "us-east" || regions[1].Slug != "eu-central" {
-		t.Errorf("regions = %+v", regions)
+	if len(regions.Regions) != 2 || regions.Regions[0] != "eu-north-1" || regions.Regions[1] != "us-east-1" {
+		t.Errorf("regions = %+v", regions.Regions)
+	}
+	want := RegionDetail{ID: "eu-north-1", DisplayName: "EU North", Location: "Helsinki, Finland"}
+	if len(regions.RegionDetails) != 2 || regions.RegionDetails[0] != want {
+		t.Errorf("region_details = %+v", regions.RegionDetails)
 	}
 }
 
 func TestListRegionsNormalizesNull(t *testing.T) {
 	client := newTestClient(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, _ = w.Write([]byte(`{"regions":null}`))
+		_, _ = w.Write([]byte(`{"regions":null,"region_details":null}`))
 	}))
 
 	regions, err := client.ListRegions(context.Background())
-	if err != nil || regions == nil || len(regions) != 0 {
-		t.Errorf("ListRegions = %v, %v; want non-nil empty slice", regions, err)
+	if err != nil || regions.Regions == nil || len(regions.Regions) != 0 ||
+		regions.RegionDetails == nil || len(regions.RegionDetails) != 0 {
+		t.Errorf("ListRegions = %+v, %v; want non-nil empty slices", regions, err)
 	}
 }
 
