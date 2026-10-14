@@ -8,8 +8,11 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Changed
 
-- Indirect dependency `google.golang.org/genproto/googleapis/rpc`
-  v0.0.0-20260928230214-8a89bd6388cc (was v0.0.0-20260921155816-b14227669459). No behavior change.
+- Go directive raised to 1.27.2.
+- Indirect dependencies: `google.golang.org/genproto/googleapis/rpc`
+  v0.0.0-20261012220534-4341edf3f941 (was v0.0.0-20260921155816-b14227669459), `golang.org/x/net`
+  v0.61.0, `golang.org/x/sys` v0.49.0, `golang.org/x/text` v0.43.0, `github.com/mattn/go-colorable`
+  v0.1.16. No behavior change.
 
 ## [0.4.0] - 2026-09-30
 
