@@ -1,6 +1,6 @@
 module github.com/capydatabase/terraform-provider-capydb
 
-go 1.27.2
+go 1.27.3
 
 require (
 	github.com/capydatabase/capydbclient v1.14.0
