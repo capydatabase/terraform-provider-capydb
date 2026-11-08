@@ -8,6 +8,11 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Changed
 
+- `capydbclient` v1.15.0 (adds the `logs/errors` shapes and `ProjectAlert.peak_value`; no
+  provider-visible change).
+
+### Changed
+
 - Go directive raised to 1.27.3.
 - Indirect dependencies: `google.golang.org/genproto/googleapis/rpc`
   v0.0.0-20261012220534-4341edf3f941 (was v0.0.0-20260921155816-b14227669459), `golang.org/x/net`
