@@ -30,9 +30,9 @@ output "production_postgres_versions" {
 }
 ```
 
-Pin `capydb_project.postgres_version` to a literal rather than to `default_version`: changing
-`postgres_version` forces a replacement, so following the default would replace the database when
-the platform default moves.
+Pin `capydb_project.postgres_version` to a literal rather than to `default_version`: a different
+`postgres_version` on an existing project is a plan error (upgrade with `capydb upgrade major`), so
+following the default would fail every plan once the platform default moves.
 
 ## Schema
 
