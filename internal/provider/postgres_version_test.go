@@ -2,12 +2,14 @@ package provider
 
 import (
 	"context"
+	"strings"
 	"testing"
 
 	"github.com/hashicorp/terraform-plugin-framework/datasource"
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	rschema "github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/schema/validator"
 	"github.com/hashicorp/terraform-plugin-framework/tfsdk"
 	"github.com/hashicorp/terraform-plugin-framework/types"
@@ -144,5 +146,113 @@ func TestProjectPostgresChannelAndWarning(t *testing.T) {
 	requireNoDiags(t, "get data source postgres_warning", dsResp.State.GetAttribute(ctx, path.Root("postgres_warning"), &dsWarning))
 	if !dsWarning.IsNull() {
 		t.Errorf("data source postgres_warning = %v, want null", dsWarning)
+	}
+}
+
+// planPostgresVersion runs the postgres_version plan modifiers the way
+// Terraform does for an update of an existing project: prior state from the
+// mock control plane, config and proposed plan from the given overrides.
+func planPostgresVersion(t *testing.T, s rschema.Schema, state tfsdk.State, overrides map[string]tftypes.Value) planmodifier.StringResponse {
+	t.Helper()
+	ctx := context.Background()
+	var stateValue types.String
+	requireNoDiags(t, "state postgres_version", state.GetAttribute(ctx, path.Root("postgres_version"), &stateValue))
+
+	attrs := map[string]tftypes.Value{}
+	for _, name := range []string{"id", "name", "region", "environment"} {
+		attrs[name] = str(stateString(t, state, name))
+	}
+	for name, value := range overrides {
+		attrs[name] = value
+	}
+	raw := objectValue(t, s.Type().TerraformType(ctx), attrs)
+	plan := tfsdk.Plan{Schema: s, Raw: raw}
+	config := tfsdk.Config{Schema: s, Raw: raw}
+	var configValue types.String
+	requireNoDiags(t, "config postgres_version", config.GetAttribute(ctx, path.Root("postgres_version"), &configValue))
+
+	attribute, ok := s.Attributes["postgres_version"].(rschema.StringAttribute)
+	if !ok {
+		t.Fatal("postgres_version is not a string attribute")
+	}
+	// Terraform proposes unknown for an optional+computed attribute the config omits.
+	proposed := configValue
+	if configValue.IsNull() {
+		proposed = types.StringUnknown()
+	}
+	resp := planmodifier.StringResponse{PlanValue: proposed}
+	for _, modifier := range attribute.PlanModifiers {
+		req := planmodifier.StringRequest{
+			Path:        path.Root("postgres_version"),
+			Config:      config,
+			ConfigValue: configValue,
+			Plan:        plan,
+			PlanValue:   resp.PlanValue,
+			State:       state,
+			StateValue:  stateValue,
+		}
+		modifier.PlanModifyString(ctx, req, &resp)
+		if resp.Diagnostics.HasError() {
+			break
+		}
+	}
+	return resp
+}
+
+// A version mismatch on an existing project is never a replacement (FG-3): a
+// config ahead of the database asks for `capydb upgrade major`, a config behind
+// it (the database was upgraded outside Terraform) asks to align the config.
+func TestProjectPostgresVersionMismatchErrorsInsteadOfReplacing(t *testing.T) {
+	ctx := context.Background()
+	client, _ := newTestClient(t)
+	r := NewProjectResource()
+	configureResource(t, r, client)
+	s := resourceSchema(t, r)
+
+	planRaw := objectValue(t, s.Type().TerraformType(ctx), map[string]tftypes.Value{
+		"name":             str("versioned"),
+		"environment":      str("non_production"),
+		"postgres_version": str("17"),
+	})
+	created := resource.CreateResponse{State: emptyResourceState(t, s)}
+	r.Create(ctx, resource.CreateRequest{
+		Plan:   tfsdk.Plan{Schema: s, Raw: planRaw},
+		Config: tfsdk.Config{Schema: s, Raw: planRaw},
+	}, &created)
+	requireNoDiags(t, "create", created.Diagnostics)
+
+	cases := []struct {
+		name      string
+		overrides map[string]tftypes.Value
+		wantError string
+		wantPlan  string
+	}{
+		{"config ahead", map[string]tftypes.Value{"postgres_version": str("18")}, "capydb upgrade major", ""},
+		{"config behind", map[string]tftypes.Value{"postgres_version": str("16")}, `"17"`, ""},
+		{"config matches", map[string]tftypes.Value{"postgres_version": str("17")}, "", "17"},
+		{"config omitted", map[string]tftypes.Value{"postgres_version": tftypes.NewValue(tftypes.String, nil)}, "", "17"},
+		// A rename replaces the project anyway, so the new database may take a new major.
+		{"replaced by rename", map[string]tftypes.Value{"name": str("renamed"), "postgres_version": str("18")}, "", "18"},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			resp := planPostgresVersion(t, s, created.State, tc.overrides)
+			if resp.RequiresReplace {
+				t.Fatal("a postgres_version difference must never plan a replacement")
+			}
+			if tc.wantError != "" {
+				if !resp.Diagnostics.HasError() {
+					t.Fatalf("want a plan error mentioning %s", tc.wantError)
+				}
+				if detail := resp.Diagnostics.Errors()[0].Detail(); !strings.Contains(detail, tc.wantError) {
+					t.Fatalf("error detail %q does not mention %s", detail, tc.wantError)
+				}
+				return
+			}
+			requireNoDiags(t, "plan", resp.Diagnostics)
+			if got := resp.PlanValue.ValueString(); got != tc.wantPlan {
+				t.Errorf("planned postgres_version = %q, want %q", got, tc.wantPlan)
+			}
+		})
 	}
 }

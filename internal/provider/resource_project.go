@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -144,12 +145,13 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 				Description: "Postgres major version for the database (`16`, `17`, `18`, or `19`). Omit for the " +
 					"platform default. `19` is the beta channel: an upstream PostgreSQL beta that is not production " +
 					"ready, accepted only while CapyDB offers it (off by default; the API rejects it otherwise). " +
-					"Changing it forces a replacement.",
+					"Set on create only: a different value on an existing project is a plan error, never a replacement " +
+					"of the database. Upgrade with `capydb upgrade major`, then set the new major here.",
 				Validators: []validator.String{
 					stringvalidator.OneOf("16", "17", "18", "19"),
 				},
 				PlanModifiers: []planmodifier.String{
-					stringplanmodifier.RequiresReplace(),
+					postgresVersionUnchanged{},
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
@@ -417,6 +419,71 @@ func sameRegion(held, reported string) bool {
 func regionChangeRequiresReplace(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
 	state, planned := req.StateValue.ValueString(), req.PlanValue.ValueString()
 	resp.RequiresReplace = !sameRegion(state, planned) && !sameRegion(planned, state)
+}
+
+// postgresVersionUnchanged refuses to plan a different Postgres major for an
+// existing project. Replacing the project would destroy the database (a
+// non_production project has no delete approval to stop it), and a major
+// upgrade is a separate, self-serve operation (`capydb upgrade major`) whose
+// result refresh writes back into state. A config ahead of the database asks
+// for that upgrade; a config behind it (the database was upgraded outside
+// Terraform) asks to align the config. A project that is being replaced
+// anyway - its name changed - may take any major.
+type postgresVersionUnchanged struct{}
+
+func (postgresVersionUnchanged) Description(context.Context) string {
+	return "A different Postgres major on an existing project is a plan error, not a replacement."
+}
+
+func (m postgresVersionUnchanged) MarkdownDescription(ctx context.Context) string {
+	return m.Description(ctx)
+}
+
+func (postgresVersionUnchanged) PlanModifyString(ctx context.Context, req planmodifier.StringRequest, resp *planmodifier.StringResponse) {
+	if req.State.Raw.IsNull() || req.Plan.Raw.IsNull() ||
+		req.StateValue.IsNull() || req.StateValue.IsUnknown() ||
+		req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	current, wanted := req.StateValue.ValueString(), req.ConfigValue.ValueString()
+	if current == wanted {
+		return
+	}
+	var stateName, planName types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("name"), &stateName)...)
+	resp.Diagnostics.Append(req.Plan.GetAttribute(ctx, path.Root("name"), &planName)...)
+	if resp.Diagnostics.HasError() || !planName.Equal(stateName) {
+		return
+	}
+
+	var projectID types.String
+	resp.Diagnostics.Append(req.State.GetAttribute(ctx, path.Root("id"), &projectID)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
+	if majorNumber(wanted) > majorNumber(current) {
+		resp.Diagnostics.AddAttributeError(req.Path, "Postgres major upgrades do not run through Terraform",
+			fmt.Sprintf("postgres_version is %q in the configuration, but project %s runs Postgres %s. Terraform "+
+				"does not replace the database to change its major. Run `capydb upgrade major --project %s "+
+				"--target-major %s` (or upgrade from the dashboard), then run terraform plan again.",
+				wanted, projectID.ValueString(), current, projectID.ValueString(), wanted))
+		return
+	}
+	resp.Diagnostics.AddAttributeError(req.Path, "postgres_version is behind the database",
+		fmt.Sprintf("postgres_version is %q in the configuration, but project %s already runs Postgres %s "+
+			"(it was upgraded outside Terraform). Postgres majors cannot be downgraded and Terraform does not "+
+			"replace the database: align the config by setting postgres_version = %q.",
+			wanted, projectID.ValueString(), current, current))
+}
+
+// majorNumber parses a Postgres major the schema validator already restricted
+// to digits; anything unparsable sorts first.
+func majorNumber(version string) int {
+	major, err := strconv.Atoi(version)
+	if err != nil {
+		return 0
+	}
+	return major
 }
 
 // optionalString maps a field the API omits when empty to null rather than "".

@@ -6,6 +6,15 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Fixed
+
+- **`postgres_version` no longer replaces a database.** A different major on an existing
+  `capydb_project` planned a destroy-and-recreate: after `capydb upgrade major`, a config still pinning
+  the old major replaced the upgraded database (a `non_production` project has no delete approval to
+  stop it), and bumping the config to upgrade did the same. The plan now fails instead: a config ahead
+  of the database says to run `capydb upgrade major`, a config behind it says to set the major the
+  database runs. A project replaced for another reason (a new `name`) still takes any major.
+
 ### Changed
 
 - Go 1.27.4; x/sys 0.50.0, x/text 0.44.0, genproto rpc 2026-11-10. No provider-visible change.

@@ -62,7 +62,11 @@ resource "capydb_project" "staging" {
 - `postgres_version` (String) Postgres major version for the database (`16`, `17`, `18`, or `19`).
   Omit for the platform default. `19` is the beta channel: an upstream PostgreSQL beta that is not
   production ready, accepted only while CapyDB offers it (off by default; the API rejects it
-  otherwise). Changing it forces a replacement.
+  otherwise). Set on create only: a different value on an existing project is a plan error, never a
+  replacement of the database. A value above the database's major tells you to run
+  `capydb upgrade major --project <id> --target-major <major>` (or upgrade from the dashboard) and plan
+  again; a value below it (the database was upgraded outside Terraform) tells you to set the major the
+  database now runs. Refresh records the live major in state after an upgrade.
 - `timeouts` (Attributes) (see [below for nested schema](#nestedatt--timeouts))
 
 ### Read-Only
