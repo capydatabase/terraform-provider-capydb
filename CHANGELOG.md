@@ -8,6 +8,7 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Changed
 
+- Go 1.27.4; x/sys 0.50.0, x/text 0.44.0, genproto rpc 2026-11-10. No provider-visible change.
 - `capydbclient` v1.15.0 (adds the `logs/errors` shapes and `ProjectAlert.peak_value`; no
   provider-visible change).
 
