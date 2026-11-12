@@ -52,10 +52,10 @@ resource "capydb_project" "staging" {
 
 ### Optional
 
-- `region` (String) Region to place the project in. Omit to let CapyDB pick. Changing it
-  forces a replacement, except between a deprecated region name and the region id it stands for
-  (`hel1` and `eu-north-1`): the control plane now reports neutral region ids, and a configuration
-  that still says `hel1` keeps working without replacing the database.
+- `region` (String) Region id to place the project in (see the `capydb_regions` data source). Omit
+  to let CapyDB pick. Changing it forces a replacement. The retired name `hel1` is refused at plan
+  time; write `eu-north-1`, the id of the same region. State that still holds `hel1` refreshes to
+  `eu-north-1` without replacing the database.
 - `environment` (String) Environment label, either `production` or `non_production`. Updatable in
   place.
 - `always_on` (Boolean) Whether the database is exempt from pausing when idle. Defaults to `true` for `production` and `false` for `non_production`; changing the environment without setting this re-derives it. Updatable in place.

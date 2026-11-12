@@ -158,10 +158,11 @@ func (m *mockControlPlane) handler() http.Handler {
 		if region == "" {
 			region = "eu-north-1"
 		}
-		// Mirror the real backend, which accepts the deprecated hel1 alias and
-		// reports the neutral id it stands for.
-		if region == "hel1" {
-			region = "eu-north-1"
+		// Mirror the real backend, which accepts neutral region ids only (the
+		// hel1 alias was removed).
+		if region != "eu-north-1" {
+			writeJSON(w, http.StatusBadRequest, map[string]string{"error": fmt.Sprintf("unknown region %q; valid regions: eu-north-1", region)})
+			return
 		}
 		// Mirror the real backend's validation + default (service.
 		// SupportedPostgresVersions / DefaultPostgresVersion).

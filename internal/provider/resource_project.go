@@ -62,13 +62,7 @@ type projectModel struct {
 func (m *projectModel) fill(project capydb.Project) {
 	m.ID = types.StringValue(project.ID)
 	m.Name = types.StringValue(project.Name)
-	// Keep a configured deprecated alias (hel1) in state while the API reports the
-	// neutral id it now stands for: overwriting it would plan a replacement of
-	// the database on the next run, and after create the provider would return a
-	// value that differs from the plan.
-	if !sameRegion(m.Region.ValueString(), project.Region) {
-		m.Region = types.StringValue(project.Region)
-	}
+	m.Region = types.StringValue(project.Region)
 	m.Environment = types.StringValue(project.Environment)
 	m.AlwaysOn = types.BoolValue(project.AlwaysOn)
 	// Empty while the database is still provisioning; the post-provision read
@@ -114,9 +108,12 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 			"region": schema.StringAttribute{
 				Optional: true,
 				Computed: true,
-				Description: "Region to place the project in. Omit to let CapyDB pick. Changing it forces a " +
-					"replacement, except between a deprecated region name and the region id it stands for " +
-					"(`hel1` and `eu-north-1`).",
+				Description: "Region id to place the project in (see the `capydb_regions` data source). Omit to " +
+					"let CapyDB pick. Changing it forces a replacement. The retired name `hel1` is refused; " +
+					"write `eu-north-1`.",
+				Validators: []validator.String{
+					retiredRegionName{},
+				},
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.RequiresReplaceIf(regionChangeRequiresReplace,
 						"Changing the region forces a replacement.",
@@ -393,32 +390,56 @@ func (r *projectResource) ImportState(ctx context.Context, req resource.ImportSt
 	resource.ImportStatePassthroughID(ctx, path.Root("id"), req, resp)
 }
 
-// deprecatedRegionAliases maps the region names the control plane accepted
-// before neutral region ids to the id each one now stands for. The control
-// plane accepts them as input for one release and reports the neutral id.
-var deprecatedRegionAliases = map[string]string{
+// retiredRegionNames maps the region names the control plane accepted before
+// neutral region ids to the id each one stands for. The control plane no
+// longer accepts them, but state written while it did can still hold one.
+var retiredRegionNames = map[string]string{
 	"hel1": "eu-north-1",
 }
 
-// sameRegion reports whether a region value held in configuration or state
-// names the same region the API reported, either literally or through a
-// deprecated alias.
-func sameRegion(held, reported string) bool {
-	if held == "" {
-		return false
+// currentRegionID returns the region id a value held in configuration or
+// state stands for: a retired name maps to its id, anything else is itself.
+func currentRegionID(region string) string {
+	if id, retired := retiredRegionNames[strings.ToLower(region)]; retired {
+		return id
 	}
-	if strings.EqualFold(held, reported) {
-		return true
-	}
-	return deprecatedRegionAliases[strings.ToLower(held)] == reported
+	return region
 }
 
 // regionChangeRequiresReplace replaces the database only when the planned
-// region is a different region, not when a configuration moves between a
-// deprecated alias and the id it stands for.
+// region is a different region, not when state still holds the retired name
+// of the planned region (state from before the rename, planned without a
+// refresh). An unknown plan (region omitted from the config while another
+// attribute changes) is not a move: UseStateForUnknown keeps the state value.
 func regionChangeRequiresReplace(_ context.Context, req planmodifier.StringRequest, resp *stringplanmodifier.RequiresReplaceIfFuncResponse) {
-	state, planned := req.StateValue.ValueString(), req.PlanValue.ValueString()
-	resp.RequiresReplace = !sameRegion(state, planned) && !sameRegion(planned, state)
+	if req.PlanValue.IsUnknown() {
+		return
+	}
+	resp.RequiresReplace = currentRegionID(req.StateValue.ValueString()) != currentRegionID(req.PlanValue.ValueString())
+}
+
+// retiredRegionName refuses a retired region name in configuration at plan
+// time, naming the id to write, instead of letting create fail at the API.
+type retiredRegionName struct{}
+
+func (retiredRegionName) Description(context.Context) string {
+	return "Refuses retired region names such as hel1."
+}
+
+func (v retiredRegionName) MarkdownDescription(ctx context.Context) string {
+	return v.Description(ctx)
+}
+
+func (retiredRegionName) ValidateString(_ context.Context, req validator.StringRequest, resp *validator.StringResponse) {
+	if req.ConfigValue.IsNull() || req.ConfigValue.IsUnknown() {
+		return
+	}
+	name := req.ConfigValue.ValueString()
+	if id, retired := retiredRegionNames[strings.ToLower(name)]; retired {
+		resp.Diagnostics.AddAttributeError(req.Path, "Retired region name",
+			fmt.Sprintf("Region %q is no longer accepted; write region = %q, the id of the same region. "+
+				"Existing projects already run there, so the change does not replace the database.", name, id))
+	}
 }
 
 // postgresVersionUnchanged refuses to plan a different Postgres major for an

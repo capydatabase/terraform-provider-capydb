@@ -6,7 +6,17 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Removed
+
+- **The `hel1` region alias.** The control plane no longer accepts it, so a `capydb_project` whose
+  `region` still says `hel1` now fails at plan time with a message to write `eu-north-1` (the same
+  region) instead of failing at create. State written while the alias was accepted refreshes to
+  `eu-north-1`, and a plan run without a refresh does not replace the database over the old name.
+
 ### Fixed
+
+- **Omitting `region` no longer risks a replacement.** When another attribute changed, the planned
+  region was unknown before it was copied from state, and the region check counted that as a move.
 
 - **`postgres_version` no longer replaces a database.** A different major on an existing
   `capydb_project` planned a destroy-and-recreate: after `capydb upgrade major`, a config still pinning
