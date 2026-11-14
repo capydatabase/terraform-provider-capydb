@@ -6,6 +6,8 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-11-14
+
 ### Removed
 
 - **The `hel1` region alias.** The control plane no longer accepts it, so a `capydb_project` whose
@@ -27,12 +29,10 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Changed
 
+- `capydbclient` v1.16.0.
 - Go 1.27.4; x/sys 0.50.0, x/text 0.44.0, genproto rpc 2026-11-10. No provider-visible change.
 - `capydbclient` v1.15.0 (adds the `logs/errors` shapes and `ProjectAlert.peak_value`; no
   provider-visible change).
-
-### Changed
-
 - Go directive raised to 1.27.3.
 - Indirect dependencies: `google.golang.org/genproto/googleapis/rpc`
   v0.0.0-20261012220534-4341edf3f941 (was v0.0.0-20260921155816-b14227669459), `golang.org/x/net`
