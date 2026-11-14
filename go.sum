@@ -1,7 +1,7 @@
 github.com/bufbuild/protocompile v0.14.1 h1:iA73zAf/fyljNjQKwYzUHD6AD4R8KMasmwa/FBatYVw=
 github.com/bufbuild/protocompile v0.14.1/go.mod h1:ppVdAIhbr2H8asPk6k4pY7t9zB1OU5DoEw9xY/FUi1c=
-github.com/capydatabase/capydbclient v1.15.0 h1:5ISsatesz9bzKigZf/FNMzJhj3vic91MBf7/Mj/WIGE=
-github.com/capydatabase/capydbclient v1.15.0/go.mod h1:/BZT7LBISOOarCghGa31Hdd/zXq4o9LBimnCPY2BgVM=
+github.com/capydatabase/capydbclient v1.16.0 h1:feqy2qgjG7opGc1ah+eCIgCZb07TwPojXoVSTE2aB1I=
+github.com/capydatabase/capydbclient v1.16.0/go.mod h1:TfXKiKx8x9p5flYZHR7EF/8BZRB+qioV/8WZ9Z3d0l0=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fatih/color v1.13.0/go.mod h1:kLAiJbzzSOZDVNGyDpeOxJ47H46qBXwg5ILebYFFOfk=
