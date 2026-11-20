@@ -6,6 +6,8 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+## [0.5.1] - 2026-11-20
+
 ### Changed
 
 - **PostgreSQL 19 is generally available on CapyDB.** The `capydb_project.postgres_version`
