@@ -29,10 +29,6 @@ type mockControlPlane struct {
 	jobPolls  map[string]int
 	jobStates map[string]string
 
-	// postgresBetaEnabled mirrors CAPYDB_PG19_BETA_ENABLED: whether new
-	// databases may ask for the beta major.
-	postgresBetaEnabled bool
-
 	secretRotations int
 	extendCalls     []int64
 	patchedEnvs     []string
@@ -40,8 +36,9 @@ type mockControlPlane struct {
 	nextID int
 }
 
-// mockPostgresBetaWarning stands for model.PostgresBetaWarning.
-const mockPostgresBetaWarning = "This database runs a PostgreSQL beta release and is not for production data."
+// mockPostgresPreReleaseWarning stands for the warning the control plane
+// sends for a database on the beta channel (an upstream pre-release).
+const mockPostgresPreReleaseWarning = "This database runs a PostgreSQL beta release and is not for production data."
 
 // mockApprovalToken stands for an approval a person created in the dashboard.
 const mockApprovalToken = "ap_handoff"
@@ -108,13 +105,12 @@ func (m *mockControlPlane) handler() http.Handler {
 	mux.HandleFunc("GET /v1/postgres-versions", func(w http.ResponseWriter, r *http.Request) {
 		m.mu.Lock()
 		defer m.mu.Unlock()
+		// The production catalog: no major is on the beta channel.
 		versions := []capydb.PostgresVersion{
 			{Version: "16", Channel: "previous", ProductionReady: true},
 			{Version: "17", Channel: "stable", Default: true, ProductionReady: true},
-			{Version: "18", Channel: "current", ProductionReady: true},
-		}
-		if m.postgresBetaEnabled {
-			versions = append(versions, capydb.PostgresVersion{Version: "19", Channel: "beta"})
+			{Version: "18", Channel: "stable", ProductionReady: true},
+			{Version: "19", Channel: "current", ProductionReady: true},
 		}
 		writeJSON(w, http.StatusOK, capydb.PostgresVersionsResponse{Versions: versions})
 	})
@@ -170,23 +166,12 @@ func (m *mockControlPlane) handler() http.Handler {
 		if postgresVersion == "" {
 			postgresVersion = "17"
 		}
-		switch postgresVersion {
-		case "16", "17", "18":
-		case "19":
-			// The beta major is open only while the platform flag is on.
-			if !m.postgresBetaEnabled {
-				writeJSON(w, http.StatusBadRequest, map[string]string{"error": "PostgreSQL 19 is not available for new databases yet (available: 16, 17, 18)"})
-				return
-			}
-		default:
+		// Mirror model.PostgresChannelNotice: the channel of each major. All
+		// are generally available, so none carries a warning.
+		channel, ok := map[string]string{"16": "previous", "17": "stable", "18": "stable", "19": "current"}[postgresVersion]
+		if !ok {
 			writeJSON(w, http.StatusBadRequest, map[string]string{"error": "unsupported postgres version " + postgresVersion})
 			return
-		}
-		// Mirror model.PostgresChannelNotice: the channel of each major, and
-		// the warning only for the beta one.
-		channel, warning := map[string]string{"16": "previous", "17": "stable", "18": "current", "19": "beta"}[postgresVersion], ""
-		if channel == "beta" {
-			warning = mockPostgresBetaWarning
 		}
 		project := &capydb.Project{
 			ID:                m.id("prj"),
@@ -198,7 +183,6 @@ func (m *mockControlPlane) handler() http.Handler {
 			Name:              request.Name,
 			PostgresVersion:   postgresVersion,
 			PostgresChannel:   channel,
-			PostgresWarning:   warning,
 			Slug:              strings.ReplaceAll(strings.ToLower(request.Name), " ", "-"),
 			Region:            region,
 			DatabaseName:      "db_" + request.Name,

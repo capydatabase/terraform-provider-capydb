@@ -85,7 +85,9 @@ func (d *projectDataSource) Schema(_ context.Context, _ datasource.SchemaRequest
 			"postgres_version":    schema.StringAttribute{Computed: true, Description: "Postgres major version of the database."},
 			"postgres_channel": schema.StringAttribute{
 				Computed: true,
-				Description: "Release channel of the Postgres major: `previous`, `stable`, `current` or `beta`. " +
+				Description: "Release channel of the Postgres major: `previous` (oldest generally available " +
+					"major), `stable` (proven GA majors, including the default), `current` (newest GA major) or " +
+					"`beta` (upstream pre-release). " +
 					"Null while the database is still provisioning.",
 			},
 			"postgres_warning": schema.StringAttribute{

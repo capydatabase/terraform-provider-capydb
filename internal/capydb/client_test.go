@@ -223,7 +223,7 @@ func TestListPostgresVersions(t *testing.T) {
 		gotPath = r.URL.Path
 		_, _ = w.Write([]byte(`{"versions":[` +
 			`{"version":"17","channel":"stable","default":true,"production_ready":true},` +
-			`{"version":"19","channel":"beta","default":false,"production_ready":false}]}`))
+			`{"version":"19","channel":"current","default":false,"production_ready":true}]}`))
 	}))
 
 	versions, err := client.ListPostgresVersions(context.Background())
@@ -235,7 +235,7 @@ func TestListPostgresVersions(t *testing.T) {
 	}
 	want := []PostgresVersion{
 		{Version: "17", Channel: "stable", Default: true, ProductionReady: true},
-		{Version: "19", Channel: "beta", Default: false, ProductionReady: false},
+		{Version: "19", Channel: "current", Default: false, ProductionReady: true},
 	}
 	if len(versions.Versions) != len(want) || versions.Versions[0] != want[0] || versions.Versions[1] != want[1] {
 		t.Errorf("versions = %+v, want %+v", versions.Versions, want)

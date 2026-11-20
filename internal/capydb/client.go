@@ -192,7 +192,8 @@ type RegionDetail = capydbclient.RegionDetail
 type PostgresVersionsResponse = capydbclient.PostgresVersionsResponse
 
 // PostgresVersion is one Postgres major with its release channel, whether it
-// is the default, and whether it is production ready (false for beta).
+// is the default, and whether it is production ready (false for a beta major,
+// an upstream pre-release).
 type PostgresVersion = capydbclient.PostgresVersion
 
 // Organization is the org record exposed to its members.

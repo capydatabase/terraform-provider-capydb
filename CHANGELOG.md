@@ -8,6 +8,12 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ### Changed
 
+- **PostgreSQL 19 is generally available on CapyDB.** The `capydb_project.postgres_version`
+  description and docs no longer call `19` a beta that the API rejects unless CapyDB offers it; the
+  `postgres_channel`/`channel` descriptions explain the channels as they now are (`previous` the
+  oldest GA major, `stable` the proven ones - 17, the default, and 18 - `current` the newest, `beta`
+  an upstream pre-release listed only while one is on offer). The `capydb_postgres_versions` docs
+  note that two majors can share a channel, so pick by `version` or `default`. No schema change.
 - Dependencies: x/net 0.63.0 and genproto rpc 20261118 (indirect). CI lints with golangci-lint
   v2.15.0. No behaviour change.
 

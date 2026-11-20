@@ -597,7 +597,7 @@ func TestRegionsDataSource(t *testing.T) {
 
 func TestPostgresVersionsDataSource(t *testing.T) {
 	ctx := context.Background()
-	client, mock := newTestClient(t)
+	client, _ := newTestClient(t)
 
 	d := NewPostgresVersionsDataSource()
 	configureDataSource(t, d, client)
@@ -616,31 +616,27 @@ func TestPostgresVersionsDataSource(t *testing.T) {
 	state := read()
 	var versions []postgresVersionModel
 	requireNoDiags(t, "get versions", state.GetAttribute(ctx, path.Root("versions"), &versions))
-	if len(versions) != 3 {
-		t.Fatalf("versions = %v, want 16, 17, 18", versions)
+	if len(versions) != 4 {
+		t.Fatalf("versions = %v, want 16, 17, 18, 19", versions)
 	}
 	stable := versions[1]
 	if stable.Version.ValueString() != "17" || stable.Channel.ValueString() != "stable" ||
 		!stable.Default.ValueBool() || !stable.ProductionReady.ValueBool() {
 		t.Errorf("versions[1] = %v, want 17 / stable / default / production ready", stable)
 	}
+	// Two majors share the stable channel; only one is the default.
+	secondStable := versions[2]
+	if secondStable.Version.ValueString() != "18" || secondStable.Channel.ValueString() != "stable" ||
+		secondStable.Default.ValueBool() || !secondStable.ProductionReady.ValueBool() {
+		t.Errorf("versions[2] = %v, want 18 / stable / not default / production ready", secondStable)
+	}
+	current := versions[3]
+	if current.Version.ValueString() != "19" || current.Channel.ValueString() != "current" ||
+		current.Default.ValueBool() || !current.ProductionReady.ValueBool() {
+		t.Errorf("versions[3] = %v, want 19 / current / not default / production ready", current)
+	}
 	if got := stateString(t, state, "default_version"); got != "17" {
 		t.Errorf("default_version = %q, want 17", got)
-	}
-
-	// The beta major is listed only while it is on offer, and is not production ready.
-	mock.mu.Lock()
-	mock.postgresBetaEnabled = true
-	mock.mu.Unlock()
-	state = read()
-	requireNoDiags(t, "get versions", state.GetAttribute(ctx, path.Root("versions"), &versions))
-	if len(versions) != 4 {
-		t.Fatalf("versions = %v, want 16, 17, 18, 19", versions)
-	}
-	beta := versions[3]
-	if beta.Version.ValueString() != "19" || beta.Channel.ValueString() != "beta" ||
-		beta.Default.ValueBool() || beta.ProductionReady.ValueBool() {
-		t.Errorf("versions[3] = %v, want 19 / beta / not default / not production ready", beta)
 	}
 }
 

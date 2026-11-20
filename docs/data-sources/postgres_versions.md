@@ -7,8 +7,10 @@ description: |-
 # capydb_postgres_versions (Data Source)
 
 Lists the Postgres major versions a new CapyDB database can be created on, oldest first, with the
-release channel each is offered on and which one is the default. A `beta` major appears only while
-CapyDB offers it; it is an upstream PostgreSQL beta and has `production_ready = false`. `versions`
+release channel each is offered on and which one is the default. More than one major can share a
+channel (two are `stable` when a new major reaches `current`), so pick by `version` or `default`,
+not by channel. A `beta` major appears only while CapyDB offers one; it is an upstream PostgreSQL
+pre-release and has `production_ready = false`. `versions`
 is always non-null (an empty result is an empty list), so `length()` and `for` expressions are
 safe. Requires the `projects:read` scope.
 
@@ -51,7 +53,9 @@ Read-Only:
 
 - `version` (String) Major version (for example `17`), the value `capydb_project.postgres_version`
   takes.
-- `channel` (String) Release channel: `previous`, `stable`, `current` or `beta`.
+- `channel` (String) Release channel: `previous` (oldest generally available major), `stable`
+  (proven GA majors, one of them the default), `current` (newest GA major) or `beta` (upstream
+  pre-release, listed only while CapyDB offers one).
 - `default` (Boolean) Whether a new database gets this major when `postgres_version` is not set.
 - `production_ready` (Boolean) Whether this major is fit for production data. False for a `beta`
-  major, an upstream PostgreSQL beta offered for evaluation only.
+  major, an upstream PostgreSQL pre-release offered for evaluation only.

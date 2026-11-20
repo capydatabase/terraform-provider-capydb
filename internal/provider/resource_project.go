@@ -140,8 +140,7 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 				Optional: true,
 				Computed: true,
 				Description: "Postgres major version for the database (`16`, `17`, `18`, or `19`). Omit for the " +
-					"platform default. `19` is the beta channel: an upstream PostgreSQL beta that is not production " +
-					"ready, accepted only while CapyDB offers it (off by default; the API rejects it otherwise). " +
+					"platform default (see the `capydb_postgres_versions` data source). " +
 					"Set on create only: a different value on an existing project is a plan error, never a replacement " +
 					"of the database. Upgrade with `capydb upgrade major`, then set the new major here.",
 				Validators: []validator.String{
@@ -154,8 +153,9 @@ func (r *projectResource) Schema(ctx context.Context, _ resource.SchemaRequest, 
 			},
 			"postgres_channel": schema.StringAttribute{
 				Computed: true,
-				Description: "Release channel of the database's Postgres major: `previous`, `stable`, `current` " +
-					"or `beta`. Read from the API on every refresh, so it follows a major upgrade or a " +
+				Description: "Release channel of the database's Postgres major: `previous` (oldest generally " +
+					"available major), `stable` (proven GA majors, including the default), `current` (newest GA " +
+					"major) or `beta` (upstream pre-release). Read from the API on every refresh, so it follows a major upgrade or a " +
 					"re-classification of the major. Null while the database is still provisioning.",
 				PlanModifiers: []planmodifier.String{
 					stringplanmodifier.UseStateForUnknown(),

@@ -16,9 +16,8 @@ import (
 	"github.com/hashicorp/terraform-plugin-go/tftypes"
 )
 
-// The beta major (19) passes the provider's validation so the control plane
-// decides whether it is on offer; anything outside the catalog still fails at
-// plan time.
+// Every offered major (16 through 19) passes the provider's validation;
+// anything outside the catalog fails at plan time.
 func TestProjectPostgresVersionValidator(t *testing.T) {
 	s := resourceSchema(t, NewProjectResource())
 	attribute, ok := s.Attributes["postgres_version"].(rschema.StringAttribute)
@@ -43,53 +42,10 @@ func TestProjectPostgresVersionValidator(t *testing.T) {
 	}
 }
 
-func TestProjectResourceCreatesOnBetaMajor(t *testing.T) {
-	ctx := context.Background()
-	client, mock := newTestClient(t)
-
-	r := NewProjectResource()
-	configureResource(t, r, client)
-	s := resourceSchema(t, r)
-	schemaType := s.Type().TerraformType(ctx)
-	planRaw := objectValue(t, schemaType, map[string]tftypes.Value{
-		"name":             str("beta app"),
-		"environment":      str("non_production"),
-		"postgres_version": str("19"),
-	})
-
-	// The platform flag is off by default: the API refuses the beta major.
-	refused := resource.CreateResponse{State: emptyResourceState(t, s)}
-	r.Create(ctx, resource.CreateRequest{
-		Plan:   tfsdk.Plan{Schema: s, Raw: planRaw},
-		Config: tfsdk.Config{Schema: s, Raw: planRaw},
-	}, &refused)
-	if !refused.Diagnostics.HasError() {
-		t.Fatal("creating on 19 while CapyDB does not offer it must fail")
-	}
-
-	mock.mu.Lock()
-	mock.postgresBetaEnabled = true
-	mock.mu.Unlock()
-	created := resource.CreateResponse{State: emptyResourceState(t, s)}
-	r.Create(ctx, resource.CreateRequest{
-		Plan:   tfsdk.Plan{Schema: s, Raw: planRaw},
-		Config: tfsdk.Config{Schema: s, Raw: planRaw},
-	}, &created)
-	requireNoDiags(t, "create on 19", created.Diagnostics)
-	if got := stateString(t, created.State, "postgres_version"); got != "19" {
-		t.Errorf("postgres_version = %q, want 19", got)
-	}
-	if got := stateString(t, created.State, "postgres_channel"); got != "beta" {
-		t.Errorf("postgres_channel = %q, want beta", got)
-	}
-	if got := stateString(t, created.State, "postgres_warning"); got != mockPostgresBetaWarning {
-		t.Errorf("postgres_warning = %q, want the beta warning", got)
-	}
-}
-
 // A GA major reports its channel and no warning (null, not ""), and a refresh
 // picks up a channel the API reports differently later - after a major
-// upgrade or when a newer major pushes this one to another channel.
+// upgrade or when a newer major pushes this one to another channel - and a
+// warning the API sends for a major that is not production ready.
 func TestProjectPostgresChannelAndWarning(t *testing.T) {
 	ctx := context.Background()
 	client, mock := newTestClient(t)
@@ -101,7 +57,7 @@ func TestProjectPostgresChannelAndWarning(t *testing.T) {
 	planRaw := objectValue(t, schemaType, map[string]tftypes.Value{
 		"name":             str("ga app"),
 		"environment":      str("non_production"),
-		"postgres_version": str("18"),
+		"postgres_version": str("19"),
 	})
 	created := resource.CreateResponse{State: emptyResourceState(t, s)}
 	r.Create(ctx, resource.CreateRequest{
@@ -109,6 +65,9 @@ func TestProjectPostgresChannelAndWarning(t *testing.T) {
 		Config: tfsdk.Config{Schema: s, Raw: planRaw},
 	}, &created)
 	requireNoDiags(t, "create", created.Diagnostics)
+	if got := stateString(t, created.State, "postgres_version"); got != "19" {
+		t.Errorf("postgres_version = %q, want 19", got)
+	}
 	if got := stateString(t, created.State, "postgres_channel"); got != "current" {
 		t.Errorf("postgres_channel = %q, want current", got)
 	}
@@ -146,6 +105,27 @@ func TestProjectPostgresChannelAndWarning(t *testing.T) {
 	requireNoDiags(t, "get data source postgres_warning", dsResp.State.GetAttribute(ctx, path.Root("postgres_warning"), &dsWarning))
 	if !dsWarning.IsNull() {
 		t.Errorf("data source postgres_warning = %v, want null", dsWarning)
+	}
+
+	// No major is on the beta channel today, but a warning the API sends is
+	// passed through as it comes.
+	mock.mu.Lock()
+	mock.projects[projectID].PostgresChannel = "beta"
+	mock.projects[projectID].PostgresWarning = mockPostgresPreReleaseWarning
+	mock.mu.Unlock()
+	readResp = resource.ReadResponse{State: created.State}
+	r.Read(ctx, resource.ReadRequest{State: created.State}, &readResp)
+	requireNoDiags(t, "read with a warning", readResp.Diagnostics)
+	if got := stateString(t, readResp.State, "postgres_warning"); got != mockPostgresPreReleaseWarning {
+		t.Errorf("postgres_warning after refresh = %q, want the pre-release warning", got)
+	}
+	dsResp = datasource.ReadResponse{State: tfsdk.State{Schema: ds, Raw: tftypes.NewValue(dsType, nil)}}
+	d.Read(ctx, datasource.ReadRequest{Config: tfsdk.Config{Schema: ds, Raw: objectValue(t, dsType, map[string]tftypes.Value{
+		"id": str(projectID),
+	})}}, &dsResp)
+	requireNoDiags(t, "data source read with a warning", dsResp.Diagnostics)
+	if got := stateString(t, dsResp.State, "postgres_warning"); got != mockPostgresPreReleaseWarning {
+		t.Errorf("data source postgres_warning = %q, want the pre-release warning", got)
 	}
 }
 

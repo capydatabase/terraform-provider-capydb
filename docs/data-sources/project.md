@@ -34,8 +34,9 @@ data "capydb_project" "by_id" {
 - `environment` (String) Environment label.
 - `plan` (String) Billing-derived project plan.
 - `postgres_version` (String) Postgres major version of the database.
-- `postgres_channel` (String) Release channel of the Postgres major: `previous`, `stable`, `current`
-  or `beta`. Null while the database is still provisioning.
+- `postgres_channel` (String) Release channel of the Postgres major: `previous` (oldest generally
+  available major), `stable` (proven GA majors, including the default), `current` (newest GA major)
+  or `beta` (upstream pre-release). Null while the database is still provisioning.
 - `postgres_warning` (String) What CapyDB does not guarantee for this database, set only when its
   Postgres major is not production ready (the beta channel). Null otherwise.
 - `region` (String) Region the project lives in.

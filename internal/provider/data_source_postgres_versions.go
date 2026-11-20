@@ -55,7 +55,7 @@ func (d *postgresVersionsDataSource) Schema(_ context.Context, _ datasource.Sche
 						},
 						"channel": schema.StringAttribute{
 							Computed:    true,
-							Description: "Release channel: `previous`, `stable`, `current` or `beta`.",
+							Description: "Release channel: `previous` (oldest generally available major), `stable` (proven GA majors, one of them the default), `current` (newest GA major) or `beta` (upstream pre-release, listed only while CapyDB offers one).",
 						},
 						"default": schema.BoolAttribute{
 							Computed:    true,
@@ -63,7 +63,7 @@ func (d *postgresVersionsDataSource) Schema(_ context.Context, _ datasource.Sche
 						},
 						"production_ready": schema.BoolAttribute{
 							Computed:    true,
-							Description: "Whether this major is fit for production data. False for a `beta` major, an upstream PostgreSQL beta offered for evaluation only.",
+							Description: "Whether this major is fit for production data. False for a `beta` major, an upstream PostgreSQL pre-release offered for evaluation only.",
 						},
 					},
 				},

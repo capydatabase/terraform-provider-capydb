@@ -60,10 +60,9 @@ resource "capydb_project" "staging" {
   place.
 - `always_on` (Boolean) Whether the database is exempt from pausing when idle. Defaults to `true` for `production` and `false` for `non_production`; changing the environment without setting this re-derives it. Updatable in place.
 - `postgres_version` (String) Postgres major version for the database (`16`, `17`, `18`, or `19`).
-  Omit for the platform default. `19` is the beta channel: an upstream PostgreSQL beta that is not
-  production ready, accepted only while CapyDB offers it (off by default; the API rejects it
-  otherwise). Set on create only: a different value on an existing project is a plan error, never a
-  replacement of the database. A value above the database's major tells you to run
+  Omit for the platform default (see the `capydb_postgres_versions` data source). Set on create
+  only: a different value on an existing project is a plan error, never a replacement of the
+  database. A value above the database's major tells you to run
   `capydb upgrade major --project <id> --target-major <major>` (or upgrade from the dashboard) and plan
   again; a value below it (the database was upgraded outside Terraform) tells you to set the major the
   database now runs. Refresh records the live major in state after an upgrade.
@@ -72,8 +71,9 @@ resource "capydb_project" "staging" {
 ### Read-Only
 
 - `id` (String) Project id.
-- `postgres_channel` (String) Release channel of the database's Postgres major: `previous`,
-  `stable`, `current` or `beta`. Read from the API on every refresh, so it follows a major upgrade
+- `postgres_channel` (String) Release channel of the database's Postgres major: `previous` (oldest
+  generally available major), `stable` (proven GA majors, including the default), `current` (newest
+  GA major) or `beta` (upstream pre-release). Read from the API on every refresh, so it follows a major upgrade
   or a re-classification of the major. Null while the database is still provisioning.
 - `postgres_warning` (String) What CapyDB does not guarantee for this database, set only when its
   Postgres major is not production ready (the beta channel). Null otherwise.
