@@ -6,6 +6,11 @@ here. The format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/
 
 ## [Unreleased]
 
+### Changed
+
+- Dependencies: x/net 0.63.0 and genproto rpc 20261118 (indirect). CI lints with golangci-lint
+  v2.15.0. No behaviour change.
+
 ## [0.5.0] - 2026-11-14
 
 ### Removed
